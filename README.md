@@ -2,7 +2,7 @@
 
 Spinal Tap is Dash application which provides simple visualization tools to for
 the Scalable Particle Imaging With Neural Embeddings
-([SPINE](https://github.com/DeepLearnPhysics/spine) package.
+([SPINE](https://github.com/DeepLearnPhysics/spine) package).
 
 ## Installation
 
@@ -11,11 +11,11 @@ We recommend using a Singularity or Docker containers pulled from
 which contains all the necessary dependancy to run this package.
 
 This package does not need to be installed. Simply pull this repository and make
-sure the python path points to the spine package:
+sure to use the `--recurse-submodules` option to pull the SPINE submodule
+automatically, i.e.
 
 ```python
-import sys
-sys.path.insert(0, '/path/to/spine/')
+git clone --recurse-submodules https://github.com/DeepLearnPhysics/spinal_tap
 ```
 
 ## Usage
