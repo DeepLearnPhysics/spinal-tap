@@ -23,7 +23,7 @@ def initialize_reader(file_path, use_run):
     HDF5Reader
         File reader
     """
-    return HDF5Reader(file_path, create_run_map=use_run)
+    return HDF5Reader(file_path, create_run_map=use_run, skip_unknown_attrs=True)
 
 
 def load_data(reader, entry, mode, obj):
