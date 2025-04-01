@@ -253,6 +253,7 @@ def div_graph_daq():
                         id='checklist-draw-mode-1',
                         options=[
                             {'label': ' Draw end points', 'value': 'point'},
+                            {'label': ' Draw directions', 'value': 'direction'},
                             {'label': ' Draw vertices', 'value': 'vertex'},
                             {'label': ' Draw flashes', 'value': 'flash'},
                             {'label': ' Only matched flashes', 'value': 'match_only'}],

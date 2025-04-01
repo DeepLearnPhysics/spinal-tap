@@ -180,6 +180,7 @@ def register_callbacks(app):
                 obj, attrs, color_attr=draw_attr,
                 draw_raw='raw' in draw_mode,
                 draw_end_points='point' in draw_mode,
+                draw_directions='direction' in draw_mode,
                 draw_vertices='vertex' in draw_mode,
                 draw_flashes='flash' in draw_mode,
                 matched_flash_only='match_only' in draw_mode,
