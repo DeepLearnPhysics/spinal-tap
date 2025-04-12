@@ -56,7 +56,9 @@ def load_data(reader, entry, mode, obj):
 
     # Initialize the builder
     builder = BuildManager(
-           obj == 'fragments', obj == 'particles', obj == 'interactions',
+           obj == 'fragments',
+           obj in ['particles', 'interactions'],
+           obj == 'interactions',
            mode=mode)
 
     # Process the entry through the builder
