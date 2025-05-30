@@ -166,7 +166,7 @@ def register_callbacks(app):
         draw_mode = draw_mode_1 + draw_mode_2
         drawer = Drawer(
                 data, draw_mode=mode, detector=geo,
-                split_scene='split' in draw_mode)
+                split_scene='split_scene' in draw_mode)
 
         # Process the attributes to draw
         if attrs is not None:
@@ -184,7 +184,8 @@ def register_callbacks(app):
                 draw_vertices='vertex' in draw_mode,
                 draw_flashes='flash' in draw_mode,
                 matched_flash_only='match_only' in draw_mode,
-                synchronize='sync' in draw_mode)
+                synchronize='sync' in draw_mode,
+                split_traces='split_traces' in draw_mode)
 
         return (
             dcc.Graph(figure=figure, id='graph-evd'), 

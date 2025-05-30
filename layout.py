@@ -268,9 +268,10 @@ def div_graph_daq():
                         id='checklist-draw-mode-2',
                         options=[
                             {'label': ' Show raw', 'value': 'raw'},
-                            {'label': ' Split scene', 'value': 'split'},
+                            {'label': ' Split scene', 'value': 'split_scene'},
+                            {'label': ' Split traces', 'value': 'split_traces'},
                             {'label': ' Sync cameras', 'value': 'sync'}],
-                        value=['split'],
+                        value=['split_scene'],
                         style={'margin-left': '5px'}
                     )],
                     className='six columns'
