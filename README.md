@@ -1,6 +1,6 @@
 # Spinal Tap
 
-Spinal Tap is Dash application which provides simple visualization tools to for
+Spinal Tap is Dash application which provides simple visualization tools for
 the Scalable Particle Imaging With Neural Embeddings
 ([SPINE](https://github.com/DeepLearnPhysics/spine) package).
 
