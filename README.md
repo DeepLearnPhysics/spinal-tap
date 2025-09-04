@@ -15,7 +15,7 @@ sure to use the `--recurse-submodules` option to pull the SPINE submodule
 automatically, i.e.
 
 ```python
-git clone --recurse-submodules https://github.com/DeepLearnPhysics/spinal_tap
+git clone --recurse-submodules https://github.com/DeepLearnPhysics/spinal-tap
 ```
 
 ## Usage
