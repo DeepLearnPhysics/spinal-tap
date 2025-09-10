@@ -65,7 +65,7 @@ def load_data(reader, entry, mode, obj):
     builder(data)
 
     # Return run info if available
-    run_info = None, None, None
+    run, subrun, event = None, None, None
     if 'run_info' in data:
         run_info = data['run_info']
         run, subrun, event = run_info.run, run_info.subrun, run_info.event
