@@ -1,2 +1,0 @@
-[console_scripts]
-spinal-tap = spinal_tap.app:main
