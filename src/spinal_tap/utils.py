@@ -1,9 +1,7 @@
 """Defines basic functions used by the Spinal Tap application."""
 
-import numpy as np
-
-from spine.io.read import HDF5Reader
-from spine.build import BuildManager
+from spine.construct import BuildManager
+from spine.io.core.read import HDF5Reader
 
 
 def initialize_reader(file_path, use_run):
@@ -56,18 +54,19 @@ def load_data(reader, entry, mode, obj):
 
     # Initialize the builder
     builder = BuildManager(
-           obj == 'fragments',
-           obj in ['particles', 'interactions'],
-           obj == 'interactions',
-           mode=mode)
+        obj == "fragments",
+        obj in ["particles", "interactions"],
+        obj == "interactions",
+        mode=mode,
+    )
 
     # Process the entry through the builder
     builder(data)
 
     # Return run info if available
     run, subrun, event = None, None, None
-    if 'run_info' in data:
-        run_info = data['run_info']
+    if "run_info" in data:
+        run_info = data["run_info"]
         run, subrun, event = run_info.run, run_info.subrun, run_info.event
 
     # Return

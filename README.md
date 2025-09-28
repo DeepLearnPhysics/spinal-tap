@@ -1,33 +1,53 @@
 # Spinal Tap
 
-Spinal Tap is Dash application which provides simple visualization tools for
+Spinal Tap is a Dash application that provides simple visualization tools for
 the Scalable Particle Imaging With Neural Embeddings
-([SPINE](https://github.com/DeepLearnPhysics/spine) package).
+([SPINE](https://github.com/DeepLearnPhysics/spine)) package.
+
 
 ## Installation
 
-We recommend using a Singularity or Docker containers pulled from
-[`deeplearnphysics/larcv2`](https://hub.docker.com/r/deeplearnphysics/larcv2),
-which contains all the necessary dependancy to run this package.
+You can install Spinal Tap and all dependencies (including Dash, Flask, Plotly, and spine-ml) using pip:
 
-This package does not need to be installed. Simply pull this repository and make
-sure to use the `--recurse-submodules` option to pull the SPINE submodule
-automatically, i.e.
+```bash
+pip install .
+```
 
-```python
-git clone --recurse-submodules https://github.com/DeepLearnPhysics/spinal-tap
+Or, for editable development mode:
+
+```bash
+pip install -e .
 ```
 
 ## Usage
 
-In order to use this package locally, simply execute the `app.py` script:
+After installation, launch the app using the provided CLI:
 
 ```bash
-python3 app.py
+spinal-tap
 ```
 
-And open the app in a browser by opening `http://0.0.0.0:8888/`. Done!
+You can also check the installed version with:
+
+```bash
+spinal-tap --version
+# or
+spinal-tap -v
+```
+
+Then open your browser to [http://0.0.0.0:8888/](http://0.0.0.0:8888/).
 
 
-In the near future, the application with be hosted at
+## Development & CI/CD
+
+- Code style is enforced with black, isort, and flake8 (pre-commit and CI).
+- The GitHub Actions workflow builds and tests on every commit, PR, tag, and release.
+- Publishing:
+  - On tag push: publishes to Test PyPI (requires `TEST_PYPI_API_TOKEN` secret).
+  - On GitHub Release: publishes to PyPI (requires `PYPI_API_TOKEN` secret).
+
+
+## Roadmap
+
+In the near future, the application will be hosted at
 [https://k8s.slac.stanford.edu/spinal-tap](https://k8s.slac.stanford.edu/spinal-tap)

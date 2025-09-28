@@ -1,16 +1,12 @@
 """Defines the callbacks of the Spinal Tap application."""
 
-import os
-
 import numpy as np
-from dash import dcc, ctx, no_update
-from dash.dependencies import Input, Output, State
-
 import spine.data.out
-
+from dash import ctx, dcc, no_update
+from dash.dependencies import Input, Output, State
 from spine.vis import Drawer
 
-from utils import initialize_reader, load_data
+from .utils import initialize_reader, load_data
 
 
 def register_callbacks(app):
@@ -22,31 +18,54 @@ def register_callbacks(app):
          Dash application
     """
 
-    @app.callback([Output('div-evd', 'children'),
-                   Output('input-entry', 'value'),
-                   Output('input-run', 'value'),
-                   Output('input-subrun', 'value'),
-                   Output('input-event', 'value'),
-                   Output('text-info', 'value')],
-                  [Input('button-load', 'n_clicks'),
-                   Input('button-previous', 'n_clicks'),
-                   Input('button-next', 'n_clicks'),
-                   Input('dropdown-attr-color', 'value')],
-                  [State('input-file-path', 'value'),
-                   State('input-entry', 'value'),
-                   State('input-run', 'value'),
-                   State('input-subrun', 'value'),
-                   State('input-event', 'value'),
-                   State('input-entry', 'disabled'),
-                   State('radio-run-mode', 'value'),
-                   State('radio-object-mode', 'value'),
-                   State('dropdown-attr', 'value'),
-                   State('checklist-draw-mode-1', 'value'),
-                   State('checklist-draw-mode-2', 'value'),
-                   State('dropdown-geo', 'value')])
-    def update_graph(n_clicks_load, n_clicks_prev, n_clicks_next, draw_attr,
-                     file_path, entry, run, subrun, event, use_run, mode, obj,
-                     attrs, draw_mode_1, draw_mode_2, geo):
+    @app.callback(
+        [
+            Output("div-evd", "children"),
+            Output("input-entry", "value"),
+            Output("input-run", "value"),
+            Output("input-subrun", "value"),
+            Output("input-event", "value"),
+            Output("text-info", "value"),
+        ],
+        [
+            Input("button-load", "n_clicks"),
+            Input("button-previous", "n_clicks"),
+            Input("button-next", "n_clicks"),
+            Input("dropdown-attr-color", "value"),
+        ],
+        [
+            State("input-file-path", "value"),
+            State("input-entry", "value"),
+            State("input-run", "value"),
+            State("input-subrun", "value"),
+            State("input-event", "value"),
+            State("input-entry", "disabled"),
+            State("radio-run-mode", "value"),
+            State("radio-object-mode", "value"),
+            State("dropdown-attr", "value"),
+            State("checklist-draw-mode-1", "value"),
+            State("checklist-draw-mode-2", "value"),
+            State("dropdown-geo", "value"),
+        ],
+    )
+    def update_graph(
+        n_clicks_load,
+        n_clicks_prev,
+        n_clicks_next,
+        draw_attr,
+        file_path,
+        entry,
+        run,
+        subrun,
+        event,
+        use_run,
+        mode,
+        obj,
+        attrs,
+        draw_mode_1,
+        draw_mode_2,
+        geo,
+    ):
         """Callback which builds the graph given all the selections.
 
         Parameters
@@ -114,8 +133,11 @@ def register_callbacks(app):
             try:
                 reader = initialize_reader(file_path, use_run)
                 msg = f"File(s) found with {len(reader)} entries"
-            except:
+            except FileNotFoundError:
                 msg = f"File(s) not found:\n{file_path}"
+                return (*skip, msg)
+            except Exception as e:
+                msg = repr(e)
                 return (*skip, msg)
 
         # Check that the appropriate information is provided, abort otherwise
@@ -131,21 +153,23 @@ def register_callbacks(app):
         if use_run:
             try:
                 entry = reader.get_run_event_index(run, subrun, event)
-            except:
+            except AssertionError:
                 known_triplets = np.vstack(list(reader.run_map.keys()))
-                msg += (f"\n(run, subrun, event) = ({run}, {subrun}, {event}) "
-                         "not found in the file(s) provided. Must be one of:"
-                        f"{known_triplets}")
+                msg += (
+                    f"\n(run, subrun, event) = ({run}, {subrun}, {event}) "
+                    "not found in the file(s) provided. Must be one of:"
+                    f"{known_triplets}"
+                )
                 return (*skip, msg)
 
         # Update the entry number of the previous/next button was pressed
         # Supress updates entirely if we are out of range
-        if 'previous' in trigger:
+        if "previous" in trigger:
             if entry == 0:
                 return (*skip, no_update)
             entry -= 1
 
-        elif 'next' in trigger:
+        elif "next" in trigger:
             if entry >= len(reader) - 1:
                 return (*skip, no_update)
             entry += 1
@@ -165,8 +189,8 @@ def register_callbacks(app):
         # Intialize the drawer, fetch plot
         draw_mode = draw_mode_1 + draw_mode_2
         drawer = Drawer(
-                data, draw_mode=mode, detector=geo,
-                split_scene='split_scene' in draw_mode)
+            data, draw_mode=mode, detector=geo, split_scene="split_scene" in draw_mode
+        )
 
         # Process the attributes to draw
         if attrs is not None:
@@ -177,32 +201,43 @@ def register_callbacks(app):
         if attrs is not None and len(attrs) == 0:
             attrs = None
         figure = drawer.get(
-                obj, attrs, color_attr=draw_attr,
-                draw_raw='raw' in draw_mode,
-                draw_end_points='point' in draw_mode,
-                draw_directions='direction' in draw_mode,
-                draw_vertices='vertex' in draw_mode,
-                draw_flashes='flash' in draw_mode,
-                matched_flash_only='match_only' in draw_mode,
-                synchronize='sync' in draw_mode,
-                split_traces='split_traces' in draw_mode)
+            obj,
+            attrs,
+            color_attr=draw_attr,
+            draw_raw="raw" in draw_mode,
+            draw_end_points="point" in draw_mode,
+            draw_directions="direction" in draw_mode,
+            draw_vertices="vertex" in draw_mode,
+            draw_flashes="flash" in draw_mode,
+            matched_flash_only="match_only" in draw_mode,
+            synchronize="sync" in draw_mode,
+            split_traces="split_traces" in draw_mode,
+        )
 
         return (
-            dcc.Graph(figure=figure, id='graph-evd'), 
-            entry, run, subrun, event, msg)
+            dcc.Graph(figure=figure, id="graph-evd"),
+            entry,
+            run,
+            subrun,
+            event,
+            msg,
+        )
 
-
-    @app.callback([Output('button-source', 'children'),
-                   Output('input-entry', 'style'),
-                   Output('input-run', 'style'),
-                   Output('input-subrun', 'style'),
-                   Output('input-event', 'style'),
-                   Output('input-entry', 'disabled'),
-                   Output('input-run', 'disabled'),
-                   Output('input-subrun', 'disabled'),
-                   Output('input-event', 'disabled')],
-                   Input('button-source', 'n_clicks'),
-                   State('button-source', 'children'))
+    @app.callback(
+        [
+            Output("button-source", "children"),
+            Output("input-entry", "style"),
+            Output("input-run", "style"),
+            Output("input-subrun", "style"),
+            Output("input-event", "style"),
+            Output("input-entry", "disabled"),
+            Output("input-run", "disabled"),
+            Output("input-subrun", "disabled"),
+            Output("input-event", "disabled"),
+        ],
+        Input("button-source", "n_clicks"),
+        State("button-source", "children"),
+    )
     def update_entry_input(n_clicks, label):
         """Callback which updates the input entry source (file entry or
         (run, subrun, event) combination.
@@ -237,25 +272,34 @@ def register_callbacks(app):
         """
         # If the button is yet to be pressed, leave it alone
         if n_clicks is None:
-            return (no_update, no_update, no_update, no_update, no_update,
-                    no_update, no_update, no_update, no_update)
+            return (
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+            )
 
         # Switch the button children
-        name = 'Entry #' if 'Run' in label else 'Run #'
+        name = "Entry #" if "Run" in label else "Run #"
 
         # If the toggle is on, switch to (run, subrun, event) input
-        on = {'display': 'block', 'width': '100%'}
-        off = {'display': 'none', 'width': '100%'}
-        if 'Run' in label:
+        on = {"display": "block", "width": "100%"}
+        off = {"display": "none", "width": "100%"}
+        if "Run" in label:
             return name, on, off, off, off, False, True, True, True
 
         else:
             return name, off, on, on, on, True, False, False, False
 
-
-    @app.callback(Output('dropdown-attr', 'options'),
-                  [Input('radio-run-mode', 'value'),
-                   Input('radio-object-mode', 'value')])
+    @app.callback(
+        Output("dropdown-attr", "options"),
+        [Input("radio-run-mode", "value"), Input("radio-object-mode", "value")],
+    )
     def update_attr_list(mode, obj):
         """Callback which updates the set of recognized attributes when the
         object type being drawn changes.
@@ -273,26 +317,31 @@ def register_callbacks(app):
             List of available attributes
         """
         # Based on what needs to drawn, figure out available attributes
-        if mode != 'truth':
-            cls_name = f'Reco{obj[:-1].capitalize()}'
+        if mode != "truth":
+            cls_name = f"Reco{obj[:-1].capitalize()}"
             cls = getattr(spine.data.out, cls_name)
-            attrs = set({'depositions'})
+            attrs = set({"depositions"})
             attrs.update(set(cls().as_dict().keys()))
 
-        if mode != 'reco':
-            cls_name = f'Truth{obj[:-1].capitalize()}'
+        if mode != "reco":
+            cls_name = f"Truth{obj[:-1].capitalize()}"
             cls = getattr(spine.data.out, cls_name)
-            attrs = set({
-                    'depositions', 'depositions_q', 'depositions_adapt',
-                    'depositions_adapt_q', 'depositions_g4'
-            })
+            attrs = set(
+                {
+                    "depositions",
+                    "depositions_q",
+                    "depositions_adapt",
+                    "depositions_adapt_q",
+                    "depositions_g4",
+                }
+            )
             attrs.update(set(cls().as_dict().keys()))
 
         return np.sort(list(attrs))
 
-
-    @app.callback(Output('dropdown-attr-color', 'options'), 
-                  Input('dropdown-attr', 'value'))
+    @app.callback(
+        Output("dropdown-attr-color", "options"), Input("dropdown-attr", "value")
+    )
     def update_attr_color_list(attrs):
         """Callback which updates the set of attributes which can be used as
         a colorscale on the plot.
@@ -311,10 +360,12 @@ def register_callbacks(app):
         draw_attrs = []
         if attrs is not None:
             for attr in attrs:
-                if (attr.startswith('depositions') or
-                    attr.startswith('is_') or
-                    attr.endswith('id') or
-                    attr in ['shape', 'pid']):
+                if (
+                    attr.startswith("depositions")
+                    or attr.startswith("is_")
+                    or attr.endswith("id")
+                    or attr in ["shape", "pid"]
+                ):
                     draw_attrs.append(attr)
 
         return draw_attrs

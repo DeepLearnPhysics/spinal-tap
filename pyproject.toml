@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spinal-tap"
+version = "0.1.0"
+description = "A project that depends on spine-ml >=0.7.1"
+authors = [
+    { name = "DeepLearnPhysics" }
+]
+dependencies = [
+    "spine-ml[viz]>=0.7.1",
+    "dash>=3.0.0",
+    "flask>=2.0.0",
+    "anywidget"
+]
+requires-python = ">=3.8"
+
+[project.scripts]
+spinal-tap = "spinal_tap.app:main"
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+    "flake8"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+spinal_tap = ["assets/*"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+
+[tool.black]
+line-length = 88

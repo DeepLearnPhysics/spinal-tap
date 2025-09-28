@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: spinal-tap
+Version: 0.1.0
+Summary: A project that depends on spine-ml >=0.7.1
+Author: DeepLearnPhysics
+Requires-Python: >=3.8
+Requires-Dist: spine-ml[viz]>=0.7.1
+Requires-Dist: dash>=3.0.0
+Requires-Dist: flask>=2.0.0
+Requires-Dist: anywidget
+Provides-Extra: dev
+Requires-Dist: black; extra == "dev"
+Requires-Dist: isort; extra == "dev"
+Requires-Dist: flake8; extra == "dev"
