@@ -8,7 +8,10 @@ version = "0.1.0"
 description = "A project that depends on spine-ml >=0.7.1"
 readme = "README.md"
 authors = [
-    { name = "DeepLearnPhysics" }
+    {name = "DeepLearnPhysics Collaboration", email = "drielsma@stanford.edu"}
+]
+maintainers = [
+    {name = "Francois Drielsma", email = "drielsma@stanford.edu"}
 ]
 dependencies = [
     "spine-ml[viz]>=0.7.1",
