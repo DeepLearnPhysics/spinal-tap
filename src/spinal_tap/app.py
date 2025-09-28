@@ -7,8 +7,6 @@ from dash import Dash
 
 from .callbacks import register_callbacks
 from .layout import layout
-
-# Import version
 from .version import __version__
 
 
@@ -18,9 +16,10 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--version", "-v",
+        "--version",
+        "-v",
         action="store_true",
-        help="Show the Spinal Tap version and exit."
+        help="Show the Spinal Tap version and exit.",
     )
 
     parser.add_argument(
