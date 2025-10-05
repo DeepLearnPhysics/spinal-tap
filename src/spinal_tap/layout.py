@@ -287,7 +287,15 @@ def div_graph_daq():
                                             },
                                             {
                                                 "label": " Only matched flashes",
-                                                "value": "match_only",
+                                                "value": "flash_match_only",
+                                            },
+                                            {
+                                                "label": " Draw CRT hits",
+                                                "value": "crt",
+                                            },
+                                            {
+                                                "label": " Only matched CRT hits",
+                                                "value": "crt_match_only",
                                             },
                                         ],
                                         value=[],

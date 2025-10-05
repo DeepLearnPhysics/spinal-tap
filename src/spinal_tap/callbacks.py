@@ -189,7 +189,11 @@ def register_callbacks(app):
         # Intialize the drawer, fetch plot
         draw_mode = draw_mode_1 + draw_mode_2
         drawer = Drawer(
-            data, draw_mode=mode, detector=geo, split_scene="split_scene" in draw_mode
+            data,
+            draw_mode=mode,
+            detector=geo,
+            split_scene="split_scene" in draw_mode,
+            show_crt="crt" in draw_mode,
         )
 
         # Process the attributes to draw
@@ -209,7 +213,9 @@ def register_callbacks(app):
             draw_directions="direction" in draw_mode,
             draw_vertices="vertex" in draw_mode,
             draw_flashes="flash" in draw_mode,
-            matched_flash_only="match_only" in draw_mode,
+            matched_flash_only="flash_match_only" in draw_mode,
+            draw_crthits="crt" in draw_mode,
+            matched_crthit_only="crt_match_only" in draw_mode,
             synchronize="sync" in draw_mode,
             split_traces="split_traces" in draw_mode,
         )

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "spinal-tap"
-version = "0.1.0"
-description = "A project that depends on spine-ml >=0.7.1"
+dynamic = ["version"]
+description = "SPINE Reconstruction Visualization Tool"
 readme = "README.md"
 authors = [
     {name = "DeepLearnPhysics Collaboration", email = "drielsma@stanford.edu"}
@@ -14,7 +14,7 @@ maintainers = [
     {name = "Francois Drielsma", email = "drielsma@stanford.edu"}
 ]
 dependencies = [
-    "spine-ml[viz]>=0.7.1",
+    "spine-ml[viz]>=0.7.6",
     "dash>=3.0.0",
     "flask>=2.0.0",
     "anywidget"
@@ -36,6 +36,9 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 spinal_tap = ["assets/*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "spinal_tap.version.__version__"}
 
 [tool.isort]
 profile = "black"
