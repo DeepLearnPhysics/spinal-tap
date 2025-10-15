@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spinal-tap
+  labels:
+    app: spinal-tap
+  annotations:
+    # Uncomment and adjust based on your ingress controller
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx  # Adjust based on your ingress controller
+  rules:
+  - host: spinal-tap.example.com  # Replace with your domain
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: spinal-tap
+            port:
+              number: 8888
+  # Uncomment for TLS/HTTPS
+  # tls:
+  # - hosts:
+  #   - spinal-tap.example.com
+  #   secretName: spinal-tap-tls

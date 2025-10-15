@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.1.2] - 2025-10-15
+- Add Docker containerization support
+- Add Kubernetes deployment manifests (deployment, service, ingress)
+- Add GitHub Actions workflow for automated Docker image publishing to GHCR
+- Add automatic cleanup of old untagged Docker images
+- Add comprehensive Kubernetes deployment documentation
+- Add docker-run.sh script for local testing
+
 ## [0.1.1] - 2025-10-04
 - Add CRT hit visualization options to UI
 - Improve flash matching logic and option naming

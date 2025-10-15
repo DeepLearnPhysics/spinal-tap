@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spinal-tap
+  labels:
+    app: spinal-tap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spinal-tap
+  template:
+    metadata:
+      labels:
+        app: spinal-tap
+    spec:
+      containers:
+      - name: spinal-tap
+        image: ghcr.io/deeplearnphysics/spinal-tap:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8888
+          name: http
+          protocol: TCP
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8888
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8888
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
