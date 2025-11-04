@@ -1,233 +1,157 @@
-# Spinal Tap Kubernetes Deployment
+# Spinal Tap Kubernetes Deployment for SLAC S3DF
 
-This directory contains Kubernetes manifests for deploying Spinal Tap.
+This directory contains Kubernetes manifests for deploying Spinal Tap on SLAC's S3DF Kubernetes infrastructure.
 
 ## Prerequisites
 
-- Kubernetes cluster (1.19+)
-- kubectl configured to communicate with your cluster
-- (Optional) Ingress controller (e.g., NGINX Ingress Controller)
-- (Optional) cert-manager for TLS certificates
+- Access to SLAC S3DF Kubernetes vCluster
+- `kubectl` configured for your S3DF vCluster context
+- Appropriate storageClass access for your facility's data
 
-## Docker Image
+## SLAC S3DF Configuration
 
-The Docker image is automatically built and published to GitHub Container Registry (ghcr.io) via GitHub Actions when:
-- A new version tag is created (e.g., `v0.1.1`)
-- Manual workflow dispatch is triggered
+### Ingress
 
-This ensures only release versions are published, keeping the registry clean and efficient.
+The application is configured to be accessible at:
+- **URL**: `https://spinal-tap.slac.stanford.edu`
 
-### Building Locally
+The ingress is automatically handled by the S3DF ingress controller.
 
-To build the Docker image locally:
+### Storage
+
+The deployment includes a PersistentVolumeClaim (`pvc.yaml`) that provides read-only access to S3DF filesystem storage:
+
+- **Mount path**: `/data` (inside container)
+- **Source path**: `/sdf/data/neutrino/spinal-tap/` (on SDF filesystem, via `sdf-data-neutrino` storage class)
+- **Storage class**: `sdf-data-neutrino`
+- **Access mode**: ReadOnlyMany (read-only access)
+- **Size**: 1Gi (minimal, only for mounting existing data)
+
+**Note**: The deployment mounts only the `/sdf/data/neutrino/spinal-tap/` subdirectory (via `subPath`). Create symlinks inside this directory to expose specific data folders to users.
+
+**Important**: The storageClass is configured for the neutrino facility. If deploying for a different facility, update the `storageClassName` in `pvc.yaml`. Common patterns:
+- `sdf-data-<facility>` (e.g., `sdf-data-neutrino`, `sdf-data-lcls`, `sdf-data-atlas`)
+
+If your required path is not available, contact S3DF support at `s3df-help@slac.stanford.edu` with:
+- Desired filesystem path (e.g., `/sdf/data/neutrino/myproject`)
+- Access justification
+- Expected data size
+
+## Quick Start
+
+### Using Kustomize (Recommended)
+
+Following SLAC best practices, use Kustomize to deploy all resources:
 
 ```bash
-docker build -t spinal-tap:local .
+# Preview what will be deployed
+make dump
+
+# Deploy to your vCluster
+make apply
 ```
 
-To run locally:
+Or directly with kubectl:
 
 ```bash
-docker run -p 8888:8888 spinal-tap:local
+kubectl apply -k .
 ```
 
-Access the application at http://localhost:8888
-
-## Kubernetes Deployment
-
-### Quick Start
-
-1. Apply all manifests:
+### Manual Deployment
 
 ```bash
-kubectl apply -f k8s/
-```
-
-2. Check the deployment status:
-
-```bash
-kubectl get pods -l app=spinal-tap
-kubectl get svc spinal-tap
-```
-
-3. Access the application:
-
-**Port-forward (for testing):**
-```bash
-kubectl port-forward svc/spinal-tap 8888:8888
-```
-Then visit http://localhost:8888
-
-**Via Ingress (for production):**
-Edit `k8s/ingress.yaml` to set your domain and apply it.
-
-### Individual Resources
-
-You can also apply resources individually:
-
-```bash
-# Deploy the application
-kubectl apply -f k8s/deployment.yaml
-
-# Create the service
-kubectl apply -f k8s/service.yaml
-
-# (Optional) Create the ingress
-kubectl apply -f k8s/ingress.yaml
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+kubectl apply -f pvc.yaml
+kubectl apply -f ingress.yaml
 ```
 
 ## Configuration
 
-### Environment Variables
+### Storage Class (Optional)
 
-You can add environment variables to the deployment by editing `k8s/deployment.yaml`:
+The deployment is pre-configured for the neutrino facility with `sdf-data-neutrino`. 
 
-```yaml
-env:
-- name: CUSTOM_VAR
-  value: "custom_value"
-```
-
-### Resource Limits
-
-Adjust resource requests and limits in `k8s/deployment.yaml`:
+To use a different facility, edit `pvc.yaml`:
 
 ```yaml
-resources:
-  requests:
-    memory: "512Mi"
-    cpu: "250m"
-  limits:
-    memory: "2Gi"
-    cpu: "1000m"
+spec:
+  storageClassName: sdf-data-YOUR_FACILITY  # Update this!
 ```
 
-### Replicas
+And update the mount path in `deployment.yaml`:
 
-To scale the deployment:
+### Verify Deployment
 
 ```bash
-kubectl scale deployment spinal-tap --replicas=3
+# Check pods
+kubectl get pods -l app=spinal-tap
+
+# Check persistent volume claim
+kubectl get pvc spinal-tap-data
+
+# Check ingress
+kubectl get ingress spinal-tap
 ```
 
-Or edit the `replicas` field in `k8s/deployment.yaml`.
+### Access the Application
 
-## Ingress Configuration
+Once deployed, access Spinal Tap at:
+**https://spinal-tap.slac.stanford.edu**
 
-### NGINX Ingress Controller
+## SLAC Best Practices
 
-If using NGINX Ingress Controller, edit `k8s/ingress.yaml`:
+This deployment follows SLAC S3DF Kubernetes patterns:
 
-1. Set your domain:
-```yaml
-- host: spinal-tap.yourdomain.com
-```
-
-2. Uncomment TLS section for HTTPS:
-```yaml
-tls:
-- hosts:
-  - spinal-tap.yourdomain.com
-  secretName: spinal-tap-tls
-```
-
-3. If using cert-manager, uncomment the annotation:
-```yaml
-annotations:
-  cert-manager.io/cluster-issuer: letsencrypt-prod
-```
-
-## Monitoring
-
-### Check logs
-
-```bash
-kubectl logs -l app=spinal-tap -f
-```
-
-### Check pod status
-
-```bash
-kubectl describe pod -l app=spinal-tap
-```
-
-### Check service endpoints
-
-```bash
-kubectl get endpoints spinal-tap
-```
-
-## Updating
-
-### Update to a new version
-
-1. Edit `k8s/deployment.yaml` and update the image tag:
-```yaml
-image: ghcr.io/deeplearnphysics/spinal-tap:v0.1.2
-```
-
-2. Apply the changes:
-```bash
-kubectl apply -f k8s/deployment.yaml
-```
-
-Or use kubectl set image:
-```bash
-kubectl set image deployment/spinal-tap spinal-tap=ghcr.io/deeplearnphysics/spinal-tap:v0.1.2
-```
-
-### Rollback
-
-```bash
-kubectl rollout undo deployment/spinal-tap
-```
-
-## Cleanup
-
-To remove all resources:
-
-```bash
-kubectl delete -f k8s/
-```
+1. **Kustomize**: All manifests are managed via `kustomization.yaml`
+2. **Makefile**: Standard targets (`apply`, `dump`, `delete`) for consistency
+3. **Storage**: Uses SDF-specific storageClasses for filesystem access
+4. **Ingress**: Simple ingress configuration (no annotations needed)
+5. **Namespace**: Resources deployed in `spinal-tap` namespace
 
 ## Troubleshooting
 
-### Pods not starting
+### PVC Not Binding
 
-Check pod events:
+```bash
+kubectl describe pvc spinal-tap-data
+```
+
+**Common issues**:
+- Wrong storageClassName
+- Insufficient permissions for that storageClass
+- Contact S3DF support for storageClass approval
+
+### Pods Not Starting
+
 ```bash
 kubectl describe pod -l app=spinal-tap
+kubectl logs -l app=spinal-tap
 ```
 
-### Image pull errors
+### Ingress Not Working
 
-Ensure the image is public or configure imagePullSecrets:
 ```bash
-kubectl create secret docker-registry ghcr-secret \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USERNAME \
-  --docker-password=YOUR_GITHUB_TOKEN
+kubectl describe ingress spinal-tap
 ```
 
-Then reference it in the deployment:
-```yaml
-imagePullSecrets:
-- name: ghcr-secret
-```
+Verify the ingress shows a valid address/hostname.
 
-### Can't access the service
+## Cleanup
 
-1. Check if pods are running:
 ```bash
-kubectl get pods -l app=spinal-tap
+make delete
 ```
 
-2. Check if service is created:
+Or:
+
 ```bash
-kubectl get svc spinal-tap
+kubectl delete -k .
 ```
 
-3. Test connectivity from within the cluster:
-```bash
-kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl http://spinal-tap:8888
-```
+## Support
+
+For S3DF-specific issues:
+- Email: `s3df-help@slac.stanford.edu`
+- Docs: Check SLAC confluence for S3DF Kubernetes documentation
+- Examples: https://github.com/slaclab/slac-k8s-examples

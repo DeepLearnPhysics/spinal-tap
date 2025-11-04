@@ -1,0 +1,6 @@
+# Ignore temporary secrets directory (following SLAC pattern)
+etc/.secrets/
+
+# Ignore any local overrides
+*.local.yaml
+kustomization.local.yaml

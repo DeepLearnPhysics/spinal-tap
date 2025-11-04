@@ -25,6 +25,11 @@ spec:
         env:
         - name: PYTHONUNBUFFERED
           value: "1"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+          subPath: spinal-tap
+          readOnly: true
         resources:
           requests:
             memory: "512Mi"
@@ -48,3 +53,7 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: spinal-tap-data
