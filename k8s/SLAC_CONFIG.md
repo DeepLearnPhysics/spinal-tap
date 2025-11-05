@@ -2,7 +2,18 @@
 
 ## Overview
 
-This guide provides SLAC S3DF-specific configuration details for deploying Spinal Tap on S3DF Kubernetes.
+This guide provides detailed SLAC S3DF-specific configuration information for customizing and understanding the Spinal Tap Kubernetes deployment.
+
+**For deployment instructions**, see [README.md](README.md).
+
+## Table of Contents
+
+- [Storage Configuration](#storage-configuration)
+- [Ingress Configuration](#ingress-configuration)
+- [Namespace Configuration](#namespace-configuration)
+- [Resource Limits](#resource-limits)
+- [SLAC Best Practices](#slac-best-practices)
+- [Support Contacts](#support-contacts)
 
 ## Storage Configuration
 
@@ -19,12 +30,24 @@ S3DF uses facility-specific storage classes to control access to filesystem path
 
 If you need access to a filesystem path not covered by existing storageClasses:
 
-1. Email: `s3df-help@slac.stanford.edu`
-2. Include:
-   - Filesystem path (e.g., `/sdf/data/neutrino/myproject`)
-   - Access justification
-   - Estimated data size
-   - vCluster name
+**Email**: `s3df-help@slac.stanford.edu`
+
+**Include**:
+- Filesystem path (e.g., `/sdf/data/neutrino/myproject`)
+- Access justification
+- Estimated data size
+- vCluster name (e.g., `neutrino-ml`)
+
+### Adapting for Other Facilities
+
+To use a different facility, update `pvc.yaml`:
+
+```yaml
+spec:
+  storageClassName: sdf-data-YOUR_FACILITY  # e.g., sdf-data-lcls, sdf-data-atlas
+```
+
+And update the `subPath` in `deployment.yaml` volumeMounts section to match your facility's directory structure.
 
 ### Mounting Storage
 
@@ -67,8 +90,6 @@ Inside the container, users will see:
 
 This allows you to selectively expose only the data you want accessible through Spinal Tap.
 
-For other facilities, update both `pvc.yaml` and the `volumeMounts` in `deployment.yaml`.
-
 ## Ingress Configuration
 
 ### Domain
@@ -98,16 +119,23 @@ HTTPS is automatically configured by S3DF ingress controller. No additional cert
 
 By default, resources are deployed in the `spinal-tap` namespace (defined in `kustomization.yaml`).
 
-To use a different namespace:
+### Using a Different Namespace
 
 1. Edit `k8s/kustomization.yaml`:
 ```yaml
 namespace: my-namespace  # ← Change this
 ```
 
-2. Ensure your vCluster has access to that namespace.
+2. Create the namespace:
+```bash
+kubectl create namespace my-namespace
+```
+
+3. Ensure your vCluster has access to that namespace (contact S3DF support if needed).
 
 ## Resource Limits
+
+### Default Configuration
 
 Current defaults in `deployment.yaml`:
 
@@ -121,84 +149,47 @@ resources:
     cpu: "1000m"
 ```
 
-Adjust based on your needs and vCluster quotas.
+### When to Adjust
 
-## Example Deployment Workflow
+**Increase memory** if:
+- Pods are OOMKilled (`kubectl describe pod` shows exit code 137)
+- Loading large datasets
+- High concurrent user load
 
-1. **Clone and navigate**:
-   ```bash
-   cd spinal-tap/k8s
-   ```
+**Increase CPU** if:
+- Slow response times
+- High CPU usage (`kubectl top pod` shows CPU near limit)
 
-2. **Verify storage class** in `pvc.yaml` (pre-configured for neutrino):
-   ```yaml
-   storageClassName: sdf-data-neutrino
-   ```
+### Monitoring
 
-3. **Preview changes**:
-   ```bash
-   make dump
-   ```
-
-4. **Deploy**:
-   ```bash
-   make apply
-   ```
-
-5. **Verify**:
-   ```bash
-   kubectl get pods,pvc,ingress -l app=spinal-tap
-   ```
-
-6. **Access**:
-   Open `https://spinal-tap.slac.stanford.edu` in your browser
-
-## Common Issues
-
-### PVC Stuck in Pending
-
-**Symptom**: `kubectl get pvc` shows `Pending` status
-
-**Cause**: StorageClass not approved for your vCluster
-
-**Solution**: Contact S3DF support to request access
-
-### Pod CrashLoopBackOff
-
-**Check logs**:
+Check current resource usage:
 ```bash
-kubectl logs -l app=spinal-tap --tail=50
+kubectl top pod -n spinal-tap
 ```
 
-**Common causes**:
-- Storage mount issues
-- Missing dependencies in container
-- Application configuration errors
-
-### Ingress Not Accessible
-
-**Check ingress**:
+Check for resource-related issues:
 ```bash
-kubectl describe ingress spinal-tap
+kubectl describe pod -n spinal-tap -l app=spinal-tap | grep -E "State|Reason|Exit Code|Memory|CPU"
 ```
 
-**Verify**:
-- Ingress has an address assigned
-- DNS is correctly configured
-- No firewall rules blocking access
+Adjust based on your vCluster quotas and actual usage patterns.
 
 ## SLAC Best Practices
 
-Following patterns from https://github.com/slaclab/slac-k8s-examples:
+This deployment follows patterns from [slaclab/slac-k8s-examples](https://github.com/slaclab/slac-k8s-examples):
 
-1. **Use Kustomize**: Manage all resources via `kustomization.yaml`
-2. **Use Makefile**: Standard interface (`make apply`, `make dump`)
-3. **Separate YAML files**: One resource per file for clarity
-4. **StorageClasses**: Use facility-specific storage classes
-5. **Labels**: Consistent labeling with `app: spinal-tap`
+1. **Use Kustomize**: Manage all resources via `kustomization.yaml` for consistent deployments
+2. **Use Makefile**: Standard interface (`make apply`, `make dump`, `make delete`) 
+3. **Separate YAML files**: One Kubernetes resource per file for clarity
+4. **StorageClasses**: Use facility-specific storage classes (e.g., `sdf-data-neutrino`)
+5. **Labels**: Consistent labeling with `app: spinal-tap` for easy resource selection
+6. **ReadOnly mounts**: Use `ReadOnlyMany` for shared data access across replicas
+7. **Symlinks**: Expose only needed data via symlinks rather than mounting entire filesystems
 
 ## Support Contacts
 
-- **S3DF Infrastructure**: s3df-help@slac.stanford.edu
-- **Neutrino Physics** (example): Contact your facility coordinator
-- **GitHub Issues**: https://github.com/DeepLearnPhysics/spinal-tap/issues
+- **S3DF Infrastructure & Kubernetes**: `s3df-help@slac.stanford.edu`
+- **vCluster Access & Permissions**: `s3df-help@slac.stanford.edu`
+- **Storage Class Approvals**: `s3df-help@slac.stanford.edu`
+- **Application Issues**: [GitHub Issues](https://github.com/DeepLearnPhysics/spinal-tap/issues)
+
