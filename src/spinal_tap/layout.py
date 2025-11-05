@@ -3,6 +3,129 @@
 from dash import dcc, html
 
 
+def login_form():
+    """Generate login form for experiment selection and authentication."""
+    return html.Div(
+        [
+            # Store to hold values for form submission
+            dcc.Store(id="login-submit-trigger", data=None),
+            # Banner display (matching main app)
+            html.Div(
+                [
+                    html.H2("Spinal Tap", id="title"),
+                    html.Img(
+                        src=(
+                            "https://raw.githubusercontent.com/DeepLearnPhysics/spine/"
+                            "main/docs/source/_static/img/spine-logo-dark.png"
+                        ),
+                        style={"height": "80%", "padding-top": 8},
+                    ),
+                ],
+                className="banner",
+            ),
+            # Login container (matching main app container style)
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.H3(
+                                "Authentication Required",
+                                style={
+                                    "margin-bottom": "10px",
+                                    "color": "#302F54",
+                                    "text-align": "center",
+                                },
+                            ),
+                            html.P(
+                                "Please select your experiment and enter the password.",
+                                style={
+                                    "margin-bottom": "30px",
+                                    "color": "#302F54",
+                                    "text-align": "center",
+                                },
+                            ),
+                            html.Div(
+                                [
+                                    html.Label(
+                                        "Experiment:",
+                                        style={
+                                            "color": "#302F54",
+                                            "font-weight": "bold",
+                                        },
+                                    ),
+                                    dcc.Dropdown(
+                                        id="experiment-select",
+                                        options=[
+                                            {"label": "DUNE", "value": "dune"},
+                                            {"label": "ICARUS", "value": "icarus"},
+                                            {"label": "SBND", "value": "sbnd"},
+                                        ],
+                                        placeholder="Select experiment",
+                                        style={"margin-bottom": "20px"},
+                                    ),
+                                ],
+                            ),
+                            html.Div(
+                                [
+                                    html.Label(
+                                        "Password:",
+                                        style={
+                                            "color": "#302F54",
+                                            "font-weight": "bold",
+                                        },
+                                    ),
+                                    dcc.Input(
+                                        id="password-input",
+                                        type="password",
+                                        placeholder="Enter password",
+                                        style={
+                                            "width": "100%",
+                                            "padding": "8px",
+                                            "margin-bottom": "10px",
+                                            "border": "1px solid #ccc",
+                                            "border-radius": "4px",
+                                        },
+                                    ),
+                                ],
+                            ),
+                            html.Div(
+                                id="login-error",
+                                style={
+                                    "color": "red",
+                                    "margin-bottom": "10px",
+                                    "min-height": "20px",
+                                    "text-align": "center",
+                                },
+                            ),
+                            html.Button(
+                                "Login",
+                                id="login-button",
+                                n_clicks=0,
+                                style={
+                                    "width": "100%",
+                                    "padding": "10px",
+                                    "background-color": "#72A0C1",
+                                    "color": "white",
+                                    "border": "none",
+                                    "border-radius": "4px",
+                                    "cursor": "pointer",
+                                    "font-size": "1.2rem",
+                                    "font-weight": "bold",
+                                },
+                            ),
+                        ],
+                        style={
+                            "max-width": "400px",
+                            "margin": "40px auto",
+                        },
+                    ),
+                ],
+                className="container",
+            ),
+        ],
+    )
+
+
 def div_graph_daq():
     """Generates an HTML div that contains the DAQ graph and the display
     options.
@@ -431,32 +554,52 @@ def div_graph_daq():
     )
 
 
-# Main page layout
-layout = html.Div(
-    [
-        # Banner display
-        html.Div(
-            [
-                html.H2("Spinal Tap", id="title"),
-                html.Img(
-                    src=(
-                        "https://raw.githubusercontent.com/DeepLearnPhysics/spine/"
-                        "main/docs/source/_static/img/spine-logo-dark.png"
+def main_layout():
+    """Generate the main application layout."""
+    return html.Div(
+        [
+            # Banner display
+            html.Div(
+                [
+                    html.H2("Spinal Tap", id="title"),
+                    html.Img(
+                        src=(
+                            "https://raw.githubusercontent.com/DeepLearnPhysics/spine/"
+                            "main/docs/source/_static/img/spine-logo-dark.png"
+                        ),
+                        style={"height": "80%", "padding-top": 8},
                     ),
-                    style={"height": "80%", "padding-top": 8},
-                ),
-            ],
-            className="banner",
-        ),
-        # Main HTML division
-        html.Div(
-            [
-                # Invisible div that stores the underlying drawer objects
-                dcc.Store(id="store-entry"),  # Entry number to load
-                # Html div that shows the event display and display controls
-                div_graph_daq(),
-            ],
-            className="container",
-        ),
-    ]
-)
+                ],
+                className="banner",
+            ),
+            # Main HTML division
+            html.Div(
+                [
+                    # Invisible div that stores the underlying drawer objects
+                    dcc.Store(id="store-entry"),  # Entry number to load
+                    # Html div that shows the event display and display controls
+                    div_graph_daq(),
+                ],
+                className="container",
+            ),
+        ]
+    )
+
+
+def get_layout():
+    """Get the appropriate layout based on authentication status.
+
+    Returns
+    -------
+    dash.html.Div
+        Login form if auth required and not authenticated, main layout otherwise.
+    """
+    # Import here to avoid circular dependency
+    from .app import REQUIRE_AUTH, is_authenticated
+
+    # Always include dcc.Location for URL updates
+    content = (
+        login_form() if (REQUIRE_AUTH and not is_authenticated()) else main_layout()
+    )
+
+    return html.Div([dcc.Location(id="url", refresh=True), content])

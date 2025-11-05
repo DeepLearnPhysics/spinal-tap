@@ -4,3 +4,6 @@ etc/.secrets/
 # Ignore any local overrides
 *.local.yaml
 kustomization.local.yaml
+
+# Ignore generated secrets
+secret.yaml

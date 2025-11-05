@@ -17,6 +17,7 @@ dependencies = [
     "spine-ml[viz]>=0.7.6",
     "dash>=3.0.0",
     "flask>=2.0.0",
+    "flask-session>=0.5.0",
     "anywidget"
 ]
 requires-python = ">=3.8"

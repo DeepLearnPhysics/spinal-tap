@@ -9,6 +9,7 @@ This guide provides detailed SLAC S3DF-specific configuration information for cu
 ## Table of Contents
 
 - [Storage Configuration](#storage-configuration)
+- [Authentication and Access Control](#authentication-and-access-control)
 - [Ingress Configuration](#ingress-configuration)
 - [Namespace Configuration](#namespace-configuration)
 - [Resource Limits](#resource-limits)
@@ -89,6 +90,60 @@ Inside the container, users will see:
 ```
 
 This allows you to selectively expose only the data you want accessible through Spinal Tap.
+
+## Authentication and Access Control
+
+### Overview
+
+Spinal Tap includes optional authentication to control access to experiment-specific data. When deployed to Kubernetes, authentication is enabled by default.
+
+**For complete authentication setup**, see [AUTHENTICATION.md](AUTHENTICATION.md).
+
+### Experiment-Specific Access
+
+Users are restricted to their experiment's data directory:
+- **2x2**: `/data/2x2/`
+- **NDLAR**: `/data/ndlar/`
+- **ICARUS**: `/data/icarus/`
+- **SBND**: `/data/sbnd/`
+
+### Shared Folders
+
+You can designate folders that all authenticated users can access, regardless of experiment. This is useful for:
+- Calibration data
+- Common analysis tools
+- Documentation
+- Tutorial/example files
+
+**Configure shared folders** in `deployment.yaml`:
+
+```yaml
+env:
+- name: SPINAL_TAP_SHARED_FOLDERS
+  value: "/data/generic,/data/common,/data/calibration"
+```
+
+Default: `/data/generic`
+
+### Filesystem Organization Example
+
+For multi-experiment access with shared resources:
+
+```bash
+/sdf/data/neutrino/
+├── 2x2/
+│   └── spine/prod/      # 2x2-only files
+├── ndlar/
+│   └── spine/prod/      # NDLAR-only files
+├── icarus/
+│   └── spine/prod/      # ICARUS-only files
+├── sbnd/
+│   └── spine/prod/      # SBND-only files
+└── generic/
+    ├── calibration/     # Shared calibration data
+    ├── geometry/        # Shared geometry files
+    └── examples/        # Tutorial files
+```
 
 ## Ingress Configuration
 

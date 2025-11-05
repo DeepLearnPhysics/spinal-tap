@@ -25,10 +25,33 @@ spec:
         env:
         - name: PYTHONUNBUFFERED
           value: "1"
+        - name: SPINAL_TAP_AUTH
+          value: "true"
+        - name: SPINAL_TAP_SHARED_FOLDERS
+          value: "/data/generic,/data/public_html"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: spinal-tap-secrets
+              key: secret-key
+        - name: PASSWORD_DUNE
+          valueFrom:
+            secretKeyRef:
+              name: spinal-tap-secrets
+              key: password-dune
+        - name: PASSWORD_ICARUS
+          valueFrom:
+            secretKeyRef:
+              name: spinal-tap-secrets
+              key: password-icarus
+        - name: PASSWORD_SBND
+          valueFrom:
+            secretKeyRef:
+              name: spinal-tap-secrets
+              key: password-sbnd
         volumeMounts:
         - name: data
           mountPath: /data
-          subPath: spinal-tap
           readOnly: true
         resources:
           requests:

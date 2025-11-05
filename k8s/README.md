@@ -58,6 +58,19 @@ Thanks!
 
 Wait for approval before proceeding (usually quick).
 
+### 5. Set Up Authentication (First-time only)
+
+Spinal Tap requires authentication when deployed to Kubernetes to control access to experiment-specific data.
+
+**Quick setup:**
+```bash
+cd k8s
+./generate-secrets.sh
+kubectl apply -f secret.yaml
+```
+
+**For detailed authentication setup**, see **[AUTHENTICATION.md](AUTHENTICATION.md)**.
+
 ## SLAC S3DF Configuration
 
 This deployment is pre-configured for SLAC S3DF with:

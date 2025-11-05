@@ -9,6 +9,60 @@ from spine.vis import Drawer
 from .utils import initialize_reader, load_data
 
 
+def validate_file_access(file_path):
+    """Validate that the user can access the requested file path.
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the file to validate
+
+    Returns
+    -------
+    tuple
+        (is_valid, error_message) where is_valid is bool and
+        error_message is str or None
+    """
+    # Import here to avoid circular dependency
+    import os
+
+    from .app import EXPERIMENT_PATHS, REQUIRE_AUTH, SHARED_FOLDERS, get_experiment
+
+    if not REQUIRE_AUTH:
+        return True, None
+
+    experiment = get_experiment()
+    if not experiment:
+        return False, "Not authenticated. Please log in."
+
+    # Normalize the file path to resolve any ../ or ./ components
+    file_path = os.path.normpath(file_path)
+
+    # Check if path is in a shared folder
+    for shared in SHARED_FOLDERS:
+        shared = os.path.normpath(shared)
+        if file_path == shared or file_path.startswith(shared + os.sep):
+            return True, None
+
+    # Check if path is within any of the allowed experiment directories
+    allowed_paths = EXPERIMENT_PATHS.get(experiment, [])
+    for allowed_path in allowed_paths:
+        allowed_path = os.path.normpath(allowed_path)
+        if file_path == allowed_path or file_path.startswith(allowed_path + os.sep):
+            return True, None
+
+    # Build error message
+    paths_str = ", ".join(allowed_paths) if allowed_paths else "no paths"
+    shared_info = (
+        f" or shared folders: {', '.join(SHARED_FOLDERS)}" if SHARED_FOLDERS else ""
+    )
+    return (
+        False,
+        f"Access denied. {experiment.upper()} users can only access "
+        f"files in {paths_str}{shared_info}",
+    )
+
+
 def register_callbacks(app):
     """Registers the callbacks to the Dash application.
 
@@ -17,6 +71,64 @@ def register_callbacks(app):
     app : dash.Dash
          Dash application
     """
+
+    # Clientside callback to submit the form when credentials are valid
+    app.clientside_callback(
+        """
+        function(data) {
+            if (data && data.experiment && data.password) {
+                // Create a form and submit it
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/login';
+
+                const expInput = document.createElement('input');
+                expInput.type = 'hidden';
+                expInput.name = 'experiment';
+                expInput.value = data.experiment;
+                form.appendChild(expInput);
+
+                const pwdInput = document.createElement('input');
+                pwdInput.type = 'hidden';
+                pwdInput.name = 'password';
+                pwdInput.value = data.password;
+                form.appendChild(pwdInput);
+
+                document.body.appendChild(form);
+                form.submit();
+            }
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output("url", "pathname"),
+        Input("login-submit-trigger", "data"),
+        prevent_initial_call=True,
+    )
+
+    @app.callback(
+        [Output("login-error", "children"), Output("login-submit-trigger", "data")],
+        [Input("login-button", "n_clicks")],
+        [State("experiment-select", "value"), State("password-input", "value")],
+        prevent_initial_call=True,
+    )
+    def handle_login(n_clicks, experiment, password):
+        """Handle login button click - validate and trigger form submission."""
+        from .app import check_password
+
+        if not n_clicks:
+            return "", None
+
+        if not experiment:
+            return "Please select an experiment", None
+
+        if not password:
+            return "Please enter a password", None
+
+        if check_password(experiment, password):
+            # Credentials are valid - trigger form submission via clientside callback
+            return "", {"experiment": experiment, "password": password}
+
+        return "Invalid credentials", None
 
     @app.callback(
         [
@@ -128,6 +240,11 @@ def register_callbacks(app):
         if file_path is None or len(file_path) == 0:
             msg = "Must specify a file path..."
             return *skip, msg
+
+        # Validate file access based on authentication
+        is_valid, error_msg = validate_file_access(file_path)
+        if not is_valid:
+            return (*skip, error_msg)
 
         else:
             try:
