@@ -556,12 +556,62 @@ def div_graph_daq():
 
 def main_layout():
     """Generate the main application layout."""
+    # Import here to avoid circular dependency
+    from .app import REQUIRE_AUTH, get_experiment
+
+    # Get current experiment for display
+    experiment = get_experiment() if REQUIRE_AUTH else None
+
     return html.Div(
         [
             # Banner display
             html.Div(
                 [
                     html.H2("Spinal Tap", id="title"),
+                    # Show experiment name and logout if authenticated
+                    (
+                        html.Div(
+                            [
+                                html.Div(
+                                    experiment.upper(),
+                                    style={
+                                        "color": "#000000",
+                                        "font-size": "1.8rem",
+                                        "font-weight": "bold",
+                                        "text-align": "center",
+                                        "line-height": "1.2",
+                                    },
+                                ),
+                                html.A(
+                                    "Logout",
+                                    href="/logout",
+                                    style={
+                                        "display": "block",
+                                        "padding": "4px 12px",
+                                        "margin-top": "4px",
+                                        "background-color": "transparent",
+                                        "border": "2px solid #000000",
+                                        "border-radius": "4px",
+                                        "color": "#000000",
+                                        "font-size": "1rem",
+                                        "font-weight": "600",
+                                        "text-decoration": "none",
+                                        "text-align": "center",
+                                        "cursor": "pointer",
+                                        "transition": "all 0.2s",
+                                    },
+                                ),
+                            ],
+                            style={
+                                "position": "absolute",
+                                "left": "50%",
+                                "top": "50%",
+                                "transform": "translate(-50%, -50%)",
+                            },
+                        )
+                        if REQUIRE_AUTH and experiment
+                        else None
+                    ),
                     html.Img(
                         src=(
                             "https://raw.githubusercontent.com/DeepLearnPhysics/spine/"
@@ -571,6 +621,7 @@ def main_layout():
                     ),
                 ],
                 className="banner",
+                style={"position": "relative"},
             ),
             # Main HTML division
             html.Div(
