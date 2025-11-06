@@ -92,12 +92,12 @@
   .three.columns                  { width: 24.5%;          }
   .four.columns                   { width: 33%;            }
   .five.columns                   { width: 39.3333333333%; }
-  .six.columns                    { width: 49.75%;          }
+  .six.columns                    { width: 49.75%;         }
   .seven.columns                  { width: 56.6666666667%; }
-  .eight.columns                  { width: 66.5%;          }
-  .nine.columns                   { width: 75%;          }
+  .eight.columns                  { width: 72%;            }
+  .nine.columns                   { width: 75%;            }
   .ten.columns                    { width: 82.6666666667%; }
-  .eleven.columns                 { width: 91.5%; }
+  .eleven.columns                 { width: 91.5%;          }
   .twelve.columns                 { width: 100%; margin-left: 0; }
 
   .one-third.column               { width: 30.6666666667%; }

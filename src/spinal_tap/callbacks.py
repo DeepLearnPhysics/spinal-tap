@@ -337,8 +337,20 @@ def register_callbacks(app):
             split_traces="split_traces" in draw_mode,
         )
 
+        # Set figure size to be responsive
+        figure.update_layout(
+            autosize=True,
+            width=None,
+            height=None,
+        )
+
         return (
-            dcc.Graph(figure=figure, id="graph-evd"),
+            dcc.Graph(
+                figure=figure,
+                id="graph-evd",
+                config={"responsive": True},
+                style={"height": "85vh", "width": "100%"},
+            ),
             entry,
             run,
             subrun,
