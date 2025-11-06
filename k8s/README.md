@@ -133,6 +133,25 @@ To update manifests after making changes:
 
 Kubernetes will automatically perform a rolling update with zero downtime (if using multiple replicas).
 
+### Updating Passwords
+
+To change experiment passwords after initial deployment:
+
+1. **Generate new secrets** with updated passwords:
+   ```bash
+   cd k8s
+   ./generate-secrets.sh
+   kubectl apply -f secret.yaml -n spinal-tap
+   ```
+
+2. **Restart the deployment** to pick up the new secret values:
+   ```bash
+   kubectl rollout restart deployment spinal-tap -n spinal-tap
+   kubectl rollout status deployment spinal-tap -n spinal-tap
+   ```
+
+**Note**: Pods don't automatically reload environment variables when secrets are updated. The rollout restart creates new pods with the updated password values.
+
 ### Using Kustomize Directly
 
 Alternatively, use kubectl directly:
