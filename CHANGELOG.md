@@ -7,9 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 
 ## [0.2.1] - 2025-11-06
-### Changed
-- Update banner styling: experiment name and logout button now use black color (#000000) for better consistency with "Spinal Tap" title
-- Remove background color from logout button for cleaner appearance
+### Added
+- Add logout button to allow one to change experiment directory
 
 ### Fixed
 - Fix Makefile context check to properly evaluate kubectl context instead of comparing against literal string
