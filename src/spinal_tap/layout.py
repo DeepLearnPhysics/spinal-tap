@@ -9,40 +9,54 @@ def login_form():
         [
             # Store to hold values for form submission
             dcc.Store(id="login-submit-trigger", data=None),
+            # Banner display (matching main app)
             html.Div(
                 [
-                    html.H2("Spinal Tap Login"),
-                    html.P("Please select your experiment and enter the password."),
-                    # Form that will be submitted via JavaScript
-                    html.Form(
-                        [
-                            dcc.Input(
-                                type="hidden",
-                                name="experiment",
-                                id="hidden-experiment",
-                                value="",
-                            ),
-                            dcc.Input(
-                                type="hidden",
-                                name="password",
-                                id="hidden-password",
-                                value="",
-                            ),
-                        ],
-                        id="login-form",
-                        action="/login",
-                        method="POST",
+                    html.H2("Spinal Tap", id="title"),
+                    html.Img(
+                        src=(
+                            "https://raw.githubusercontent.com/DeepLearnPhysics/spine/"
+                            "main/docs/source/_static/img/spine-logo-dark.png"
+                        ),
+                        style={"height": "80%", "padding-top": 8},
                     ),
+                ],
+                className="banner",
+            ),
+            # Login container (matching main app container style)
+            html.Div(
+                [
                     html.Div(
                         [
+                            html.H3(
+                                "Authentication Required",
+                                style={
+                                    "margin-bottom": "10px",
+                                    "color": "#302F54",
+                                    "text-align": "center",
+                                },
+                            ),
+                            html.P(
+                                "Please select your experiment and enter the password.",
+                                style={
+                                    "margin-bottom": "30px",
+                                    "color": "#302F54",
+                                    "text-align": "center",
+                                },
+                            ),
                             html.Div(
                                 [
-                                    html.Label("Experiment:"),
+                                    html.Label(
+                                        "Experiment:",
+                                        style={
+                                            "color": "#302F54",
+                                            "font-weight": "bold",
+                                        },
+                                    ),
                                     dcc.Dropdown(
                                         id="experiment-select",
                                         options=[
-                                            {"label": "2x2", "value": "2x2"},
-                                            {"label": "NDLAR", "value": "ndlar"},
+                                            {"label": "DUNE", "value": "dune"},
                                             {"label": "ICARUS", "value": "icarus"},
                                             {"label": "SBND", "value": "sbnd"},
                                         ],
@@ -53,7 +67,13 @@ def login_form():
                             ),
                             html.Div(
                                 [
-                                    html.Label("Password:"),
+                                    html.Label(
+                                        "Password:",
+                                        style={
+                                            "color": "#302F54",
+                                            "font-weight": "bold",
+                                        },
+                                    ),
                                     dcc.Input(
                                         id="password-input",
                                         type="password",
@@ -74,6 +94,7 @@ def login_form():
                                     "color": "red",
                                     "margin-bottom": "10px",
                                     "min-height": "20px",
+                                    "text-align": "center",
                                 },
                             ),
                             html.Button(
@@ -83,27 +104,25 @@ def login_form():
                                 style={
                                     "width": "100%",
                                     "padding": "10px",
-                                    "background-color": "#007bff",
+                                    "background-color": "#72A0C1",
                                     "color": "white",
                                     "border": "none",
                                     "border-radius": "4px",
                                     "cursor": "pointer",
+                                    "font-size": "1.2rem",
+                                    "font-weight": "bold",
                                 },
                             ),
                         ],
+                        style={
+                            "max-width": "400px",
+                            "margin": "40px auto",
+                        },
                     ),
                 ],
-                style={
-                    "max-width": "400px",
-                    "margin": "100px auto",
-                    "padding": "30px",
-                    "border": "1px solid #ddd",
-                    "border-radius": "8px",
-                    "background-color": "white",
-                },
+                className="container",
             ),
         ],
-        style={"background-color": "#f5f5f5", "min-height": "100vh"},
     )
 
 
@@ -537,12 +556,62 @@ def div_graph_daq():
 
 def main_layout():
     """Generate the main application layout."""
+    # Import here to avoid circular dependency
+    from .app import REQUIRE_AUTH, get_experiment
+
+    # Get current experiment for display
+    experiment = get_experiment() if REQUIRE_AUTH else None
+
     return html.Div(
         [
             # Banner display
             html.Div(
                 [
                     html.H2("Spinal Tap", id="title"),
+                    # Show experiment name and logout if authenticated
+                    (
+                        html.Div(
+                            [
+                                html.Div(
+                                    experiment.upper(),
+                                    style={
+                                        "color": "#000000",
+                                        "font-size": "1.8rem",
+                                        "font-weight": "bold",
+                                        "text-align": "center",
+                                        "line-height": "1.2",
+                                    },
+                                ),
+                                html.A(
+                                    "Logout",
+                                    href="/logout",
+                                    style={
+                                        "display": "block",
+                                        "padding": "4px 12px",
+                                        "margin-top": "4px",
+                                        "background-color": "transparent",
+                                        "border": "2px solid #000000",
+                                        "border-radius": "4px",
+                                        "color": "#000000",
+                                        "font-size": "1rem",
+                                        "font-weight": "600",
+                                        "text-decoration": "none",
+                                        "text-align": "center",
+                                        "cursor": "pointer",
+                                        "transition": "all 0.2s",
+                                    },
+                                ),
+                            ],
+                            style={
+                                "position": "absolute",
+                                "left": "50%",
+                                "top": "50%",
+                                "transform": "translate(-50%, -50%)",
+                            },
+                        )
+                        if REQUIRE_AUTH and experiment
+                        else None
+                    ),
                     html.Img(
                         src=(
                             "https://raw.githubusercontent.com/DeepLearnPhysics/spine/"
@@ -552,6 +621,7 @@ def main_layout():
                     ),
                 ],
                 className="banner",
+                style={"position": "relative"},
             ),
             # Main HTML division
             html.Div(
