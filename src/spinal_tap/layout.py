@@ -558,6 +558,7 @@ def main_layout():
                 [
                     # Invisible div that stores the underlying drawer objects
                     dcc.Store(id="store-entry"),  # Entry number to load
+                    dcc.Store(id="store-camera-sync"),  # For camera synchronization
                     # Html div that shows the event display and display controls
                     div_graph_daq(),
                 ],

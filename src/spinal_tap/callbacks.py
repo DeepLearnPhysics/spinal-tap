@@ -105,6 +105,132 @@ def register_callbacks(app):
         prevent_initial_call=True,
     )
 
+    app.clientside_callback(
+        """
+        function(children, draw_mode_1, draw_mode_2) {
+            const draw_mode = (draw_mode_1 || []).concat(draw_mode_2 || []);
+            const syncEnabled = draw_mode.includes('sync');
+
+            // Defer until graph is actually mounted
+            setTimeout(function() {
+                const graphDiv = document.getElementById('graph-evd');
+                if (!graphDiv) {
+                    return;
+                }
+
+                const plotlyDiv = graphDiv.querySelector('.js-plotly-plot');
+                if (!plotlyDiv || !plotlyDiv.layout) {
+                    return;
+                }
+
+                const hasDualLayout = !!(
+                    plotlyDiv.layout.scene &&
+                    plotlyDiv.layout.scene2
+                );
+                if (!hasDualLayout) {
+                    return;
+                }
+
+                // Always remove old listener first to avoid duplicates
+                if (plotlyDiv._cameraSyncListener) {
+                    plotlyDiv.removeListener(
+                        'plotly_relayout',
+                        plotlyDiv._cameraSyncListener
+                    );
+                    delete plotlyDiv._cameraSyncListener;
+                }
+
+                if (!syncEnabled) {
+                    console.log('Camera sync disabled');
+                    return;
+                }
+
+                console.log('Attaching camera sync listener');
+
+                let syncing = false;
+                let lastSyncTime = 0;
+
+                const listener = function(eventData) {
+                    if (!eventData) return;
+
+                    const now = Date.now();
+                    // Ignore events immediately following relayout
+                    if (syncing || now - lastSyncTime < 150) {
+                        return;
+                    }
+
+                    const hasScene  = Object.prototype.hasOwnProperty.call(
+                        eventData, 'scene.camera'
+                    );
+                    const hasScene2 = Object.prototype.hasOwnProperty.call(
+                        eventData, 'scene2.camera'
+                    );
+
+                    // Ignore events that touch both cameras
+                    if (hasScene && hasScene2) {
+                        return;
+                    }
+
+                    if (!hasScene && !hasScene2) {
+                        return;
+                    }
+
+                    const update = {};
+                    let cam = null;
+
+                    if (hasScene && !hasScene2) {
+                        cam = eventData['scene.camera'];
+                        if (!cam) return;
+                        // Set BOTH cameras to avoid springback
+                        update['scene.camera']  = cam;
+                        update['scene2.camera'] = cam;
+                        console.log('Syncing from left scene');
+                    } else if (hasScene2 && !hasScene) {
+                        cam = eventData['scene2.camera'];
+                        if (!cam) return;
+                        // Set BOTH cameras to avoid springback
+                        update['scene.camera']  = cam;
+                        update['scene2.camera'] = cam;
+                        console.log('Syncing from right scene');
+                    }
+
+                    if (Object.keys(update).length === 0) {
+                        return;
+                    }
+
+                    syncing = true;
+                    lastSyncTime = Date.now();
+
+                    Plotly.relayout(plotlyDiv, update)
+                        .catch(function(err) {
+                            console.error(
+                                'Camera sync relayout error:', err
+                            );
+                        })
+                        .finally(function() {
+                            // Delay so relayout events are ignored
+                            setTimeout(function() {
+                                syncing = false;
+                            }, 50);
+                        });
+                };
+
+                plotlyDiv.on('plotly_relayout', listener);
+                plotlyDiv._cameraSyncListener = listener;
+
+            }, 0);
+
+            // side-effect only
+            return window.dash_clientside.no_update;
+        }
+        """,
+        Output("store-camera-sync", "data"),
+        Input("div-evd", "children"),
+        State("checklist-draw-mode-1", "value"),
+        State("checklist-draw-mode-2", "value"),
+        prevent_initial_call=True,
+    )
+
     @app.callback(
         [Output("login-error", "children"), Output("login-submit-trigger", "data")],
         [Input("login-button", "n_clicks")],
@@ -233,10 +359,10 @@ def register_callbacks(app):
         # If one of the button is yet to be pressed, supress update
         trigger = ctx.triggered_id
         if trigger is None:
-            return [no_update] * 6
+            return (no_update,) * 6
 
         # Initialize the reader (throw if the file is not specified/found)
-        skip = [no_update] * 5
+        skip = (no_update,) * 5
         if file_path is None or len(file_path) == 0:
             msg = "Must specify a file path..."
             return *skip, msg
@@ -333,22 +459,17 @@ def register_callbacks(app):
             matched_flash_only="flash_match_only" in draw_mode,
             draw_crthits="crt" in draw_mode,
             matched_crthit_only="crt_match_only" in draw_mode,
-            synchronize="sync" in draw_mode,
+            synchronize=False,  # Camera sync handled by clientside callback
             split_traces="split_traces" in draw_mode,
         )
 
         # Set figure size to be responsive
-        figure.update_layout(
-            autosize=True,
-            width=None,
-            height=None,
-        )
+        figure.update_layout(width=None, height=None)
 
         return (
             dcc.Graph(
                 figure=figure,
                 id="graph-evd",
-                config={"responsive": True},
                 style={"height": "85vh", "width": "100%"},
             ),
             entry,
@@ -407,17 +528,7 @@ def register_callbacks(app):
         """
         # If the button is yet to be pressed, leave it alone
         if n_clicks is None:
-            return (
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-                no_update,
-            )
+            return (no_update,) * 9
 
         # Switch the button children
         name = "Entry #" if "Run" in label else "Run #"
