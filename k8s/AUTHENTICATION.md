@@ -21,6 +21,7 @@ When deployed to Kubernetes, authentication is **enabled** via the `SPINAL_TAP_A
 ### 1. Generate Passwords
 
 Choose a password for each experiment:
+- Public (provides access to public datasets)
 - DUNE (provides access to both 2x2 and NDLAR data)
 - ICARUS  
 - SBND

@@ -14,6 +14,10 @@ hash_password() {
 }
 
 # Collect passwords
+echo "Enter password for public dataset access:"
+read -s PASSWORD_PUBLIC
+HASH_DUNE=$(hash_password "$PASSWORD_PUBLIC")
+
 echo "Enter password for DUNE experiment (provides access to 2x2 and NDLAR data):"
 read -s PASSWORD_DUNE
 HASH_DUNE=$(hash_password "$PASSWORD_DUNE")
@@ -37,6 +41,7 @@ echo "Creating Kubernetes secret..."
 # Create the secret
 kubectl create secret generic spinal-tap-secrets \
   --from-literal=secret-key="$SECRET_KEY" \
+  --from-literal=password-public="$HASH_PUBLIC" \
   --from-literal=password-dune="$HASH_DUNE" \
   --from-literal=password-icarus="$HASH_ICARUS" \
   --from-literal=password-sbnd="$HASH_SBND" \

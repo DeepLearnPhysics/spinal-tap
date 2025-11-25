@@ -56,6 +56,7 @@ def login_form():
                                     dcc.Dropdown(
                                         id="experiment-select",
                                         options=[
+                                            {"label": "Public", "value": "public"},
                                             {"label": "DUNE", "value": "dune"},
                                             {"label": "ICARUS", "value": "icarus"},
                                             {"label": "SBND", "value": "sbnd"},

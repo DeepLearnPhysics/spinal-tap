@@ -28,6 +28,7 @@ SHARED_FOLDERS = [
 # Experiment password hashes (only used if REQUIRE_AUTH is True)
 # Store SHA256 hashes of passwords, not plain text
 EXPERIMENT_PASSWORDS = {
+    "public": os.getenv("PASSWORD_PUBLIC", ""),
     "dune": os.getenv("PASSWORD_DUNE", ""),
     "icarus": os.getenv("PASSWORD_ICARUS", ""),
     "sbnd": os.getenv("PASSWORD_SBND", ""),
@@ -35,6 +36,7 @@ EXPERIMENT_PASSWORDS = {
 
 # Map experiments to their accessible data folders
 EXPERIMENT_PATHS = {
+    "public": [],
     "dune": ["/data/2x2", "/data/ndlar"],
     "icarus": ["/data/icarus"],
     "sbnd": ["/data/sbnd"],

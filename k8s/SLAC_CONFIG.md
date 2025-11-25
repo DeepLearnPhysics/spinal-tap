@@ -139,10 +139,10 @@ For multi-experiment access with shared resources:
 │   └── spine/prod/      # ICARUS-only files
 ├── sbnd/
 │   └── spine/prod/      # SBND-only files
-└── generic/
-    ├── calibration/     # Shared calibration data
-    ├── geometry/        # Shared geometry files
-    └── examples/        # Tutorial files
+├── generic/
+│   └── prod/            # Generic data files
+└── public_html/
+    └── /spine_workshop  # Public, small-scale files for all experiments
 ```
 
 ## Ingress Configuration

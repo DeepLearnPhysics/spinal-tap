@@ -34,6 +34,11 @@ spec:
             secretKeyRef:
               name: spinal-tap-secrets
               key: secret-key
+        - name: PASSWORD_PUBLIC
+          valueFrom:
+            secretKeyRef:
+              name: spinal-tap-secrets
+              key: password-public
         - name: PASSWORD_DUNE
           valueFrom:
             secretKeyRef:
