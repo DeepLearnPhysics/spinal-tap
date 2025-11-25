@@ -16,7 +16,7 @@ hash_password() {
 # Collect passwords
 echo "Enter password for public dataset access:"
 read -s PASSWORD_PUBLIC
-HASH_DUNE=$(hash_password "$PASSWORD_PUBLIC")
+HASH_PUBLIC=$(hash_password "$PASSWORD_PUBLIC")
 
 echo "Enter password for DUNE experiment (provides access to 2x2 and NDLAR data):"
 read -s PASSWORD_DUNE
