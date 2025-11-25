@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Spinal tap (reconstruction visualization GUI)."""
+"""Spinal Tap (reconstruction visualization GUI)."""
 
 import argparse
 import hashlib
@@ -44,12 +44,37 @@ EXPERIMENT_PATHS = {
 
 
 def hash_password(password):
-    """Hash a password using SHA256."""
+    """Hash a password using SHA256.
+
+    Parameters
+    ----------
+    password : str
+        The plain text password to hash.
+
+    Returns
+    -------
+    str
+        The SHA256 hash of the password.
+    """
     return hashlib.sha256(password.encode()).hexdigest()
 
 
 def check_password(experiment, password):
-    """Check if password matches for the given experiment."""
+    """Check if password matches for the given experiment.
+
+    Parameters
+    ----------
+    experiment : str
+        The experiment name.
+    password : str
+        The plain text password to check.
+
+    Returns
+    -------
+    bool
+        True if the password is correct or authentication is not required,
+        False otherwise.
+    """
     if not REQUIRE_AUTH:
         return True
 
@@ -80,7 +105,14 @@ def get_experiment():
 
 
 def is_authenticated():
-    """Check if the user is authenticated."""
+    """Check if the user is authenticated.
+
+    Returns
+    -------
+    bool
+        True if the user is authenticated or authentication is not required,
+        False otherwise.
+    """
     if not REQUIRE_AUTH:
         return True
 
@@ -93,6 +125,7 @@ def is_authenticated():
 
 
 def main():
+    """Main entry point for Spinal Tap application."""
 
     # Parse command line arguments
     parser = argparse.ArgumentParser()
