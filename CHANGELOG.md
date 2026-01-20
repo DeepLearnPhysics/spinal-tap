@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-01-20
+### Changed
+- **Breaking**: Update to support SPINE v0.8.0+ geometry system
+- Fetch available geometries dynamically from SPINE's `geo_dict()` instead of hard-coded list
+- Add geometry tag/version dropdown with automatic selection of latest version
+- Split geometry selection into detector name and tag
+
+### Added
+- Dynamic geometry list populated from SPINE's geometry configuration
+- Support for all SPINE geometries: 2x2, ICARUS, SBND, ND-LAr, ProtoDUNE-VD/SP/HD, DUNE10kt-1x2x6, FSD
+- Automatic tag selection for geometry versions
+- Updated DUNE log-in access list to include /data/dune and /data/pdune
 
 ## [0.2.4] - 2025-11-24
 ### Added
