@@ -1,6 +1,7 @@
 """Defines the layout of the Spinal Tap application."""
 
 from dash import dcc, html
+from spine.geo.factories import geo_dict
 
 
 def login_form():
@@ -503,8 +504,7 @@ def div_graph_daq():
                         style={"margin-top": "10px"},
                         className="twelve columns",
                     ),
-                    # Dropdown for geometry selection (among known geometries)
-                    # TODO: set up environment to find available geometries
+                    # Dropdown for geometry selection (fetched from SPINE)
                     html.Div(
                         [
                             html.H6(
@@ -515,18 +515,56 @@ def div_graph_daq():
                                     "margin-top": "10px",
                                 },
                             ),
-                            dcc.Dropdown(
-                                id="dropdown-geo",
-                                clearable=True,
-                                searchable=True,
-                                options=[
-                                    # {'label': 'None', 'value': None}
-                                    {"label": "2x2", "value": "2x2"},
-                                    {"label": "ICARUS", "value": "icarus"},
-                                    {"label": "SBND", "value": "sbnd"},
-                                    {"label": "DUNE ND-LAr", "value": "ndlar"},
+                            html.Div(
+                                [
+                                    html.Div(
+                                        [
+                                            dcc.Dropdown(
+                                                id="dropdown-geo",
+                                                clearable=True,
+                                                searchable=True,
+                                                options=[
+                                                    {
+                                                        "label": name,
+                                                        "value": name.lower(),
+                                                    }
+                                                    for name in sorted(
+                                                        set(
+                                                            info["name"]
+                                                            for info in geo_dict().values()  # noqa: E501
+                                                        )
+                                                    )
+                                                ],
+                                                value=None,
+                                                placeholder="Select detector",
+                                                style={
+                                                    "justify-content": "center",
+                                                    "width": "100%",
+                                                },
+                                            ),
+                                        ],
+                                        className="six columns",
+                                    ),
+                                    html.Div(
+                                        [
+                                            dcc.Dropdown(
+                                                id="dropdown-geo-tag",
+                                                clearable=True,
+                                                searchable=True,
+                                                options=[],
+                                                value=None,
+                                                placeholder="Tag",
+                                                style={
+                                                    "justify-content": "center",
+                                                    "width": "100%",
+                                                },
+                                            ),
+                                        ],
+                                        className="six columns",
+                                    ),
                                 ],
-                                value=None,
+                                className="twelve columns",
+                                style={"margin-bottom": "0px"},
                             ),
                         ],
                         style={"margin-top": "10px", "margin-bottom": "10px"},

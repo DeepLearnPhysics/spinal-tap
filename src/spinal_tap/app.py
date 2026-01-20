@@ -37,7 +37,7 @@ EXPERIMENT_PASSWORDS = {
 # Map experiments to their accessible data folders
 EXPERIMENT_PATHS = {
     "public": [],
-    "dune": ["/data/2x2", "/data/ndlar"],
+    "dune": ["/data/2x2", "/data/ndlar", "/data/dune", "/data/pdune"],
     "icarus": ["/data/icarus"],
     "sbnd": ["/data/sbnd"],
 }

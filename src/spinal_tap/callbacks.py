@@ -4,6 +4,7 @@ import numpy as np
 import spine.data.out
 from dash import ctx, dcc, no_update
 from dash.dependencies import Input, Output, State
+from spine.geo import GeoManager
 from spine.vis import Drawer
 
 from .utils import initialize_reader, load_data
@@ -71,6 +72,32 @@ def register_callbacks(app):
     app : dash.Dash
          Dash application
     """
+
+    @app.callback(
+        Output("dropdown-geo-tag", "options"),
+        Output("dropdown-geo-tag", "value"),
+        Input("dropdown-geo", "value"),
+    )
+    def update_tag_options(detector):
+        """Update available tags based on selected detector."""
+        if not detector:
+            return [], None
+
+        from spine.geo.factories import geo_dict
+
+        # Get all tags for the selected detector
+        tags = []
+        for info in geo_dict().values():
+            if info["name"].lower() == detector.lower():
+                tag = info.get("tag", "")
+                version = info.get("version", "")
+                label = f"{tag} (v{version})" if tag else f"v{version}"
+                tags.append({"label": label, "value": tag or version})
+
+        # Sort by version number (descending)
+        tags.sort(key=lambda x: x.get("value", ""), reverse=True)
+
+        return tags, tags[0]["value"] if tags else None
 
     # Clientside callback to submit the form when credentials are valid
     app.clientside_callback(
@@ -284,6 +311,7 @@ def register_callbacks(app):
             State("checklist-draw-mode-1", "value"),
             State("checklist-draw-mode-2", "value"),
             State("dropdown-geo", "value"),
+            State("dropdown-geo-tag", "value"),
         ],
     )
     def update_graph(
@@ -302,7 +330,8 @@ def register_callbacks(app):
         attrs,
         draw_mode_1,
         draw_mode_2,
-        geo,
+        detector,
+        detector_tag,
     ):
         """Callback which builds the graph given all the selections.
 
@@ -338,8 +367,10 @@ def register_callbacks(app):
             Attribute to use to fetch the colorscale
         draw_lmode : List[str]
             Drawing options
-        geo : str
+        detector : str
             Detector name
+        detector_tag : str
+            Detector tag
 
         Returns
         -------
@@ -429,14 +460,16 @@ def register_callbacks(app):
         if run is not None:
             msg += f"\nRun: {run}, subrun: {subrun}, event: {event}"
 
+        # If a detector name is provided, fetch the geometry
+        if detector is not None:
+            GeoManager().initialize_or_get(detector, detector_tag)
+
         # Intialize the drawer, fetch plot
         draw_mode = draw_mode_1 + draw_mode_2
         drawer = Drawer(
             data,
             draw_mode=mode,
-            detector=geo,
             split_scene="split_scene" in draw_mode,
-            show_crt="crt" in draw_mode,
         )
 
         # Process the attributes to draw
