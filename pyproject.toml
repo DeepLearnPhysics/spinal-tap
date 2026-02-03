@@ -14,7 +14,7 @@ maintainers = [
     {name = "Francois Drielsma", email = "drielsma@stanford.edu"}
 ]
 dependencies = [
-    "spine-ml[viz]>=0.9.3",
+    "spine-ml[viz]>=0.9.5",
     "dash>=3.0.0",
     "flask>=2.0.0",
     "flask-session>=0.5.0",
