@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2026-02-12
+### Changed
+- Updated dependency from `spine-ml` to `spine` (now at v0.10.1+)
+- Enhanced geometry handling to automatically load geometry configuration from data files
+
+### Fixed
+- Prevent displaying stale geometry from previous entries when no geometry is specified
+
+### Added
+- Type hints for `initialize_reader` and `load_data` functions in utils module
+
 ## [0.3.0] - 2026-01-20
 ### Changed
 - **Breaking**: Update to support SPINE v0.8.0+ geometry system
