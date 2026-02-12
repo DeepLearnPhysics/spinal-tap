@@ -60,7 +60,7 @@ Our Dockerfile uses:
 - **Multi-stage builds** would further reduce size (can add if needed)
 - **Layer caching** - Only changed layers are rebuilt
 
-Current estimated image size: **~500MB - 1GB** (depending on spine-ml dependencies)
+Current estimated image size: **~500MB - 1GB** (depending on spine dependencies)
 
 ## Workflow Summary
 

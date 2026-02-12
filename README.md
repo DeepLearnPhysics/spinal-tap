@@ -7,7 +7,7 @@ the Scalable Particle Imaging With Neural Embeddings
 
 ## Installation
 
-You can install Spinal Tap and all dependencies (including Dash, Flask, Plotly, and spine-ml) using pip:
+You can install Spinal Tap and all dependencies (including Dash, Flask, Plotly, and spine) using pip:
 
 ```bash
 pip install .
