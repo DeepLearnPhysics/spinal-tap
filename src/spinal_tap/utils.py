@@ -1,10 +1,12 @@
 """Defines basic functions used by the Spinal Tap application."""
 
+from typing import Any, Dict, Optional, Tuple
+
 from spine.construct import BuildManager
 from spine.io.core.read import HDF5Reader
 
 
-def initialize_reader(file_path, use_run):
+def initialize_reader(file_path: str, use_run: bool = False) -> HDF5Reader:
     """Initialize the HDF5 reader.
 
     TODO: add option to read from LArCV files (more tricky)
@@ -24,7 +26,13 @@ def initialize_reader(file_path, use_run):
     return HDF5Reader(file_path, create_run_map=use_run, skip_unknown_attrs=True)
 
 
-def load_data(reader, entry, mode, obj):
+def load_data(reader: HDF5Reader, entry: int, mode: str, obj: str) -> Tuple[
+    Dict[str, Any],
+    Optional[Dict[str, str]],
+    Optional[int],
+    Optional[int],
+    Optional[int],
+]:
     """Loads one entry from an HDF5 SPINE reconstruction file.
 
     Parameters
@@ -42,6 +50,8 @@ def load_data(reader, entry, mode, obj):
     -------
     dict
         Data product dictionary
+    dict
+        Geometry configuration, if available in the file
     int
         Run number
     int
@@ -63,6 +73,11 @@ def load_data(reader, entry, mode, obj):
     # Process the entry through the builder
     builder(data)
 
+    # Return geometry configuration if available
+    geo = None
+    if reader.cfg is not None:
+        geo = reader.cfg.get("geo", None)
+
     # Return run info if available
     run, subrun, event = None, None, None
     if "run_info" in data:
@@ -70,4 +85,4 @@ def load_data(reader, entry, mode, obj):
         run, subrun, event = run_info.run, run_info.subrun, run_info.event
 
     # Return
-    return data, run, subrun, event
+    return data, geo, run, subrun, event

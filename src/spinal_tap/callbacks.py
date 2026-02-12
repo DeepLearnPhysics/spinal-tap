@@ -456,13 +456,21 @@ def register_callbacks(app):
         msg += f"\nLoaded entry {entry}"
 
         # Load data for this entry
-        data, run, subrun, event = load_data(reader, entry, mode, obj)
+        data, geo, run, subrun, event = load_data(reader, entry, mode, obj)
         if run is not None:
             msg += f"\nRun: {run}, subrun: {subrun}, event: {event}"
 
-        # If a detector name is provided, fetch the geometry
+        # Set the geometry handler
         if detector is not None:
+            # If explicitly selecting a detector, use that
             GeoManager().initialize_or_get(detector, detector_tag)
+        elif geo is not None:
+            # If geometry info is provided in the file, use that
+            GeoManager().initialize_or_get(**geo)
+        else:
+            # If no geometry info is available, reset the geometry manager to avoid
+            # displaying stale geometry from a previous entry
+            GeoManager().reset()
 
         # Intialize the drawer, fetch plot
         draw_mode = draw_mode_1 + draw_mode_2
