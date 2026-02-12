@@ -604,16 +604,17 @@ def register_callbacks(app):
             List of available attributes
         """
         # Based on what needs to drawn, figure out available attributes
+        attrs = set()
         if mode != "truth":
             cls_name = f"Reco{obj[:-1].capitalize()}"
             cls = getattr(spine.data.out, cls_name)
-            attrs = set({"depositions"})
+            attrs.update({"depositions"})
             attrs.update(set(cls().as_dict().keys()))
 
         if mode != "reco":
             cls_name = f"Truth{obj[:-1].capitalize()}"
             cls = getattr(spine.data.out, cls_name)
-            attrs = set(
+            attrs.update(
                 {
                     "depositions",
                     "depositions_q",
