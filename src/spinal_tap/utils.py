@@ -23,7 +23,9 @@ def initialize_reader(file_path: str, use_run: bool = False) -> HDF5Reader:
     HDF5Reader
         File reader
     """
-    return HDF5Reader(file_path, create_run_map=use_run, skip_unknown_attrs=True)
+    return HDF5Reader(
+        file_path.strip(), create_run_map=use_run, skip_unknown_attrs=True
+    )
 
 
 def load_data(reader: HDF5Reader, entry: int, mode: str, obj: str) -> Tuple[
