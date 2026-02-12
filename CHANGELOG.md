@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-02-12
+### Fixed
+- Updated `spine` dependency to v0.10.2+ (includes update allowing to display attributes on truth but not reco)
+- Ensure the overall proposed attribute set includes both reco and truth attributes
+- Strip file names from white space on the edges to prevent loading issues
+
 ## [0.3.1] - 2026-02-12
 ### Changed
 - Updated dependency from `spine-ml` to `spine` (now at v0.10.1+)
