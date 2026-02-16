@@ -145,6 +145,7 @@ def div_graph_daq():
                         placeholder="Input file path...",
                         disabled=False,
                         required=True,
+                        autoComplete="on",
                         style={
                             "display": "flex",
                             "justify-content": "center",
