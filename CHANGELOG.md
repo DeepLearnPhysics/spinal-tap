@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-02-16
+### Changed
+- Updated to Dash 4.0.0 with style adjustments
+- Updated `spine` dependency to v0.10.3+ (includes fix to underlying Drawer tool)
+
+### Fixed
+- Fixed attribute list allowed to be displayed/used as color
+
+### Added
+- Re-added auto-complete functionality to file path (it was gone when using Dash 4.0.0)
+
 ## [0.3.2] - 2026-02-12
 ### Fixed
 - Updated `spine` dependency to v0.10.2+ (includes update allowing to display attributes on truth but not reco)
