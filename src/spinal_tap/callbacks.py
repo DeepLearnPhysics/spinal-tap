@@ -4,12 +4,22 @@ from dataclasses import asdict
 
 import numpy as np
 import spine.data.out
-from dash import ctx, dcc, no_update
+from dash import ctx, dcc, html, no_update
 from dash.dependencies import Input, Output, State
 from spine.geo import GeoManager
 from spine.vis import Drawer
 
 from .utils import initialize_reader, load_data
+
+GRAPH_CONFIG = {
+    "responsive": True,
+    "displaylogo": False,
+    "toImageButtonOptions": {
+        "format": "png",
+        "filename": "spinal_tap_event_display",
+        "scale": 2,
+    },
+}
 
 
 def validate_file_access(file_path):
@@ -64,6 +74,13 @@ def validate_file_access(file_path):
         f"Access denied. {experiment.upper()} users can only access "
         f"files in {paths_str}{shared_info}",
     )
+
+
+def parse_optional_int(value):
+    """Parse an optional integer input value."""
+    if value is None or value == "":
+        return None
+    return int(value)
 
 
 def register_callbacks(app):
@@ -293,12 +310,15 @@ def register_callbacks(app):
             Output("input-subrun", "value"),
             Output("input-event", "value"),
             Output("text-info", "value"),
+            Output("event-meta", "children"),
+            Output("log-panel", "className"),
         ],
         [
             Input("button-load", "n_clicks"),
             Input("button-previous", "n_clicks"),
             Input("button-next", "n_clicks"),
             Input("dropdown-attr-color", "value"),
+            Input("theme-toggle", "value"),
         ],
         [
             State("input-file-path", "value"),
@@ -321,6 +341,7 @@ def register_callbacks(app):
         n_clicks_prev,
         n_clicks_next,
         draw_attr,
+        theme,
         file_path,
         entry,
         run,
@@ -392,18 +413,32 @@ def register_callbacks(app):
         # If one of the button is yet to be pressed, supress update
         trigger = ctx.triggered_id
         if trigger is None:
-            return (no_update,) * 6
+            return (no_update,) * 8
 
         # Initialize the reader (throw if the file is not specified/found)
         skip = (no_update,) * 5
+
+        def fail(message):
+            return *skip, message, no_update, "log-panel has-error"
+
         if file_path is None or len(file_path) == 0:
+            if trigger == "theme-toggle":
+                return (no_update,) * 8
             msg = "Must specify a file path..."
-            return *skip, msg
+            return fail(msg)
+
+        try:
+            entry = parse_optional_int(entry)
+            run = parse_optional_int(run)
+            subrun = parse_optional_int(subrun)
+            event = parse_optional_int(event)
+        except (TypeError, ValueError):
+            return fail("Entry, run, subrun and event values must be integers")
 
         # Validate file access based on authentication
         is_valid, error_msg = validate_file_access(file_path)
         if not is_valid:
-            return (*skip, error_msg)
+            return fail(error_msg)
 
         else:
             try:
@@ -411,19 +446,19 @@ def register_callbacks(app):
                 msg = f"File(s) found with {len(reader)} entries"
             except FileNotFoundError:
                 msg = f"File(s) not found:\n{file_path}"
-                return (*skip, msg)
+                return fail(msg)
             except Exception as e:
                 msg = repr(e)
-                return (*skip, msg)
+                return fail(msg)
 
         # Check that the appropriate information is provided, abort otherwise
         if not use_run and entry is None:
             msg += "\nMust provide an entry number"
-            return (*skip, msg)
+            return fail(msg)
 
         elif use_run and (run is None or subrun is None or event is None):
             msg += "\nMust provide run, subrun and event numbers"
-            return (*skip, msg)
+            return fail(msg)
 
         # If using the run info, translate the triplet to an entry number
         if use_run:
@@ -436,24 +471,24 @@ def register_callbacks(app):
                     "not found in the file(s) provided. Must be one of:"
                     f"{known_triplets}"
                 )
-                return (*skip, msg)
+                return fail(msg)
 
         # Update the entry number of the previous/next button was pressed
         # Supress updates entirely if we are out of range
         if "previous" in trigger:
             if entry == 0:
-                return (*skip, no_update)
+                return *skip, no_update, no_update, no_update
             entry -= 1
 
         elif "next" in trigger:
             if entry >= len(reader) - 1:
-                return (*skip, no_update)
+                return *skip, no_update, no_update, no_update
             entry += 1
 
         # Check on the entry number
         if entry >= len(reader):
             msg += f"\nEntry {entry} not found in file(s) provided"
-            return (*skip, msg)
+            return fail(msg)
 
         msg += f"\nLoaded entry {entry}"
 
@@ -475,11 +510,12 @@ def register_callbacks(app):
             GeoManager().reset()
 
         # Intialize the drawer, fetch plot
-        draw_mode = draw_mode_1 + draw_mode_2
+        draw_mode = (draw_mode_1 or []) + (draw_mode_2 or [])
         drawer = Drawer(
             data,
             draw_mode=mode,
             split_scene="split_scene" in draw_mode,
+            dark="dark" in (theme or []),
         )
 
         # Process the attributes to draw
@@ -509,17 +545,32 @@ def register_callbacks(app):
         # Set figure size to be responsive
         figure.update_layout(width=None, height=None)
 
+        meta = [
+            html.Span(f"Entry {entry}", className="meta-chip"),
+        ]
+        if run is not None:
+            meta.extend(
+                [
+                    html.Span(f"Run {run}", className="meta-chip"),
+                    html.Span(f"Subrun {subrun}", className="meta-chip"),
+                    html.Span(f"Event {event}", className="meta-chip"),
+                ]
+            )
+
         return (
             dcc.Graph(
                 figure=figure,
                 id="graph-evd",
-                style={"height": "85vh", "width": "100%"},
+                className="event-graph",
+                config=GRAPH_CONFIG,
             ),
             entry,
             run,
             subrun,
             event,
             msg,
+            meta,
+            "log-panel",
         )
 
     @app.callback(
@@ -577,13 +628,14 @@ def register_callbacks(app):
         name = "Entry #" if "Run" in label else "Run #"
 
         # If the toggle is on, switch to (run, subrun, event) input
-        on = {"display": "block", "width": "100%"}
+        entry_on = {"display": "block", "width": "100%", "gridColumn": "2 / -1"}
+        field_on = {"display": "block", "width": "100%"}
         off = {"display": "none", "width": "100%"}
         if "Run" in label:
-            return name, on, off, off, off, False, True, True, True
+            return name, entry_on, off, off, off, False, True, True, True
 
         else:
-            return name, off, on, on, on, True, False, False, False
+            return name, off, field_on, field_on, field_on, True, False, False, False
 
     @app.callback(
         Output("dropdown-attr", "options"),

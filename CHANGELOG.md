@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [0.4.0] - 2026-05-09
+### Changed
+- Updated `spine` dependency to v0.11.0+ for improved hovertext support
+- Updated Dash dependency to v4.1.0+
+- Modernized the application layout with a responsive control rail and event display shell
+- Updated visual styling to follow the SPINE black, gray, and orange palette
+- Added a dark mode toggle
+- Propagated dark mode to SPINE drawing
+- Configured Plotly PNG export for event displays
+- Hide the event display plot until an entry is loaded
+- Enable camera synchronization by default in split-scene view
+
+### Fixed
+- Keep dropdown menus and virtualized dropdown options in the active dark theme
+- Apply dark theme styling to Dash 4 dropdown menus
+- Keep entry/run input layout stable when switching input modes
+- Replace native number widgets with numeric text inputs to avoid browser rendering artifacts in dark mode
+
 ## [0.3.5] - 2026-05-08
 ### Changed
 - Updated `spine` dependency to v0.10.13 exactly
@@ -56,8 +76,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [0.2.4] - 2025-11-24
 ### Added
 - Add "Public" login option to access public datasets only
-
-## [Unreleased]
 
 ## [0.2.1] - 2025-11-06
 ### Added

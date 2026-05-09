@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import os
 import secrets
+from pathlib import Path
 
 from dash import Dash
 from flask import Flask, redirect, request, session
@@ -184,8 +185,13 @@ def main():
     # Initialize the Dash application with Flask server
     # suppress_callback_exceptions is needed because layout changes dynamically
     # based on authentication state
+    asset_dir = Path(__file__).parent / "assets"
     app = Dash(
-        __name__, server=server, title="Spinal Tap", suppress_callback_exceptions=True
+        __name__,
+        server=server,
+        title="Spinal Tap",
+        suppress_callback_exceptions=True,
+        assets_folder=str(asset_dir),
     )
 
     # Set the application layout (pass function for dynamic evaluation)
