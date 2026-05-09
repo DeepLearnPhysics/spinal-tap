@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-05-09
+### Fixed
+- Align login form spacing with the main control panel
+- Move authenticated session controls into the header utility cluster
+
 ## [0.4.0] - 2026-05-09
 ### Changed
 - Updated `spine` dependency to v0.11.0+ for improved hovertext support

@@ -53,24 +53,34 @@ def login_form():
                             "Select an experiment and enter the shared password.",
                             className="login-copy",
                         ),
-                        html.Label("Experiment", className="field-label"),
-                        dcc.Dropdown(
-                            id="experiment-select",
-                            options=[
-                                {"label": "Public", "value": "public"},
-                                {"label": "DUNE", "value": "dune"},
-                                {"label": "ICARUS", "value": "icarus"},
-                                {"label": "SBND", "value": "sbnd"},
+                        html.Div(
+                            [
+                                html.Label("Experiment", className="field-label"),
+                                dcc.Dropdown(
+                                    id="experiment-select",
+                                    options=[
+                                        {"label": "Public", "value": "public"},
+                                        {"label": "DUNE", "value": "dune"},
+                                        {"label": "ICARUS", "value": "icarus"},
+                                        {"label": "SBND", "value": "sbnd"},
+                                    ],
+                                    placeholder="Select experiment",
+                                    className="control-dropdown",
+                                ),
                             ],
-                            placeholder="Select experiment",
-                            className="control-dropdown",
+                            className="login-field",
                         ),
-                        html.Label("Password", className="field-label"),
-                        dcc.Input(
-                            id="password-input",
-                            type="password",
-                            placeholder="Enter password",
-                            className="text-input",
+                        html.Div(
+                            [
+                                html.Label("Password", className="field-label"),
+                                dcc.Input(
+                                    id="password-input",
+                                    type="password",
+                                    placeholder="Enter password",
+                                    className="text-input",
+                                ),
+                            ],
+                            className="login-field",
                         ),
                         html.Div(id="login-error", className="login-error"),
                         html.Button(
@@ -444,6 +454,13 @@ def app_header(experiment=None):
                 ],
                 className="brand-block",
             ),
+            html.Div(
+                [
+                    html.Span(f"Tap {__version__}", className="version-chip"),
+                    html.Span(f"SPINE {spine_version}", className="version-chip"),
+                ],
+                className="version-block",
+            ),
             (
                 html.Div(
                     [
@@ -454,13 +471,6 @@ def app_header(experiment=None):
                 )
                 if experiment
                 else None
-            ),
-            html.Div(
-                [
-                    html.Span(f"Tap {__version__}", className="version-chip"),
-                    html.Span(f"SPINE {spine_version}", className="version-chip"),
-                ],
-                className="version-block",
             ),
             html.Div(
                 [
