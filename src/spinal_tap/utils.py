@@ -3,7 +3,7 @@
 from typing import Any, Dict, Optional, Tuple
 
 from spine.construct import BuildManager
-from spine.io.core.read import HDF5Reader
+from spine.io.read import HDF5Reader
 
 
 def initialize_reader(file_path: str, use_run: bool = False) -> HDF5Reader:

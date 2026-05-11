@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-05-11
+### Fixed
+- Require `spine` v0.12.0+ to avoid file loading issues in v0.11.1
+- Update `HDF5Reader` import path for the current `spine.io` package structure
+
 ## [0.4.1] - 2026-05-09
 ### Fixed
 - Align login form spacing with the main control panel
