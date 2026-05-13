@@ -1,7 +1,5 @@
 """Defines the callbacks of the Spinal Tap application."""
 
-from dataclasses import asdict
-
 import numpy as np
 import spine.data.out
 from dash import ctx, dcc, html, no_update
@@ -662,12 +660,16 @@ def register_callbacks(app):
         if mode != "truth":
             cls_name = f"Reco{obj[:-1].capitalize()}"
             cls_obj = getattr(spine.data.out, cls_name)()
-            attrs.update(set(asdict(cls_obj).keys()))
+            attrs.update(
+                attr for attr in cls_obj.attr_names() if not attr.startswith("points")
+            )
 
         if mode != "reco":
             cls_name = f"Truth{obj[:-1].capitalize()}"
             cls_obj = getattr(spine.data.out, cls_name)()
-            attrs.update(set(asdict(cls_obj).keys()))
+            attrs.update(
+                attr for attr in cls_obj.attr_names() if not attr.startswith("points")
+            )
 
         return np.sort(list(attrs))
 
