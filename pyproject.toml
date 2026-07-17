@@ -14,13 +14,13 @@ maintainers = [
     {name = "Francois Drielsma", email = "drielsma@stanford.edu"}
 ]
 dependencies = [
-    "spine[viz]>=0.12.3",
-    "dash>=4.1.0",
+    "spine[viz]>=0.15.1",
+    "dash>=4.4.0",
     "flask>=2.0.0",
     "flask-session>=0.5.0",
     "anywidget"
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
 [project.scripts]
 spinal-tap = "spinal_tap.app:main"

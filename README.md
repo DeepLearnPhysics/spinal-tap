@@ -1,5 +1,8 @@
 # Spinal Tap
 
+[![PyPI version](https://badge.fury.io/py/spinal-tap.svg)](https://badge.fury.io/py/spinal-tap)
+[![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/downloads/)
+
 Spinal Tap is a Dash application that provides simple visualization tools for
 the Scalable Particle Imaging With Neural Embeddings
 ([SPINE](https://github.com/DeepLearnPhysics/spine)) package.
