@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.4.4] - 2026-07-17
+### Added
+- Add PyPI release and supported Python version badges to the README
+
+### Changed
+- Require SPINE v0.15.1+ and Dash v4.4.0+
+- Require Python 3.10+ to match the supported SPINE runtime
+- Remove the unused Git installation from the runtime image
 
 ## [0.4.3] - 2026-05-13
 ### Fixed
