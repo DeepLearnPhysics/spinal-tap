@@ -29,7 +29,8 @@ spinal-tap = "spinal_tap.app:main"
 dev = [
     "black",
     "isort",
-    "flake8"
+    "flake8",
+    "pytest"
 ]
 
 [tool.setuptools.packages.find]

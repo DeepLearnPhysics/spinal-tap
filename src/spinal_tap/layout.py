@@ -1,7 +1,8 @@
 """Defines the layout of the Spinal Tap application."""
 
-import spine
 from dash import dcc, html
+
+import spine
 from spine.geo.factories import geo_dict
 
 from .version import __version__
@@ -313,7 +314,6 @@ def display_controls():
                                 id="checklist-draw-mode-2",
                                 options=[
                                     {"label": "Split scene", "value": "split_scene"},
-                                    {"label": "Split traces", "value": "split_traces"},
                                     {"label": "Sync cameras", "value": "sync"},
                                 ],
                                 value=["split_scene", "sync"],
@@ -328,6 +328,22 @@ def display_controls():
                     ),
                 ],
                 className="draw-options",
+            ),
+            html.Div(
+                [
+                    html.Label("Hide objects", className="field-label"),
+                    dcc.Dropdown(
+                        id="dropdown-object-filter",
+                        options=[],
+                        value=[],
+                        multi=True,
+                        clearable=True,
+                        searchable=True,
+                        placeholder="All objects visible",
+                        className="control-dropdown",
+                    ),
+                ],
+                className="control-block",
             ),
         ],
     )

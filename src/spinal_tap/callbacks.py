@@ -1,12 +1,14 @@
 """Defines the callbacks of the Spinal Tap application."""
 
 import numpy as np
-import spine.data.out
 from dash import ctx, dcc, html, no_update
 from dash.dependencies import Input, Output, State
+
+import spine.data.out
 from spine.geo import GeoManager
 from spine.vis import Drawer
 
+from .filtering import build_object_filter_options, filter_event_objects
 from .utils import initialize_reader, load_data
 
 GRAPH_CONFIG = {
@@ -310,6 +312,8 @@ def register_callbacks(app):
             Output("text-info", "value"),
             Output("event-meta", "children"),
             Output("log-panel", "className"),
+            Output("dropdown-object-filter", "options"),
+            Output("dropdown-object-filter", "value"),
         ],
         [
             Input("button-load", "n_clicks"),
@@ -317,6 +321,7 @@ def register_callbacks(app):
             Input("button-next", "n_clicks"),
             Input("dropdown-attr-color", "value"),
             Input("theme-toggle", "value"),
+            Input("dropdown-object-filter", "value"),
         ],
         [
             State("input-file-path", "value"),
@@ -340,6 +345,7 @@ def register_callbacks(app):
         n_clicks_next,
         draw_attr,
         theme,
+        object_filter,
         file_path,
         entry,
         run,
@@ -386,6 +392,8 @@ def register_callbacks(app):
             List of attributes to draw in the graph
         draw_attr : str
             Attribute to use to fetch the colorscale
+        object_filter : List[str]
+            Event-local object positions selected to hide
         draw_lmode : List[str]
             Drawing options
         detector : str
@@ -407,21 +415,32 @@ def register_callbacks(app):
             Event number currently loaded in the graph
         str
             Message to be displayed in the text area
+        list
+            Available object-filter options
+        list
+            Active object-filter values
         """
         # If one of the button is yet to be pressed, supress update
         trigger = ctx.triggered_id
         if trigger is None:
-            return (no_update,) * 8
+            return (no_update,) * 10
 
         # Initialize the reader (throw if the file is not specified/found)
         skip = (no_update,) * 5
 
         def fail(message):
-            return *skip, message, no_update, "log-panel has-error"
+            return (
+                *skip,
+                message,
+                no_update,
+                "log-panel has-error",
+                no_update,
+                no_update,
+            )
 
         if file_path is None or len(file_path) == 0:
             if trigger == "theme-toggle":
-                return (no_update,) * 8
+                return (no_update,) * 10
             msg = "Must specify a file path..."
             return fail(msg)
 
@@ -475,12 +494,12 @@ def register_callbacks(app):
         # Supress updates entirely if we are out of range
         if "previous" in trigger:
             if entry == 0:
-                return *skip, no_update, no_update, no_update
+                return *skip, no_update, no_update, no_update, no_update, no_update
             entry -= 1
 
         elif "next" in trigger:
             if entry >= len(reader) - 1:
-                return *skip, no_update, no_update, no_update
+                return *skip, no_update, no_update, no_update, no_update, no_update
             entry += 1
 
         # Check on the entry number
@@ -494,6 +513,22 @@ def register_callbacks(app):
         data, geo, run, subrun, event = load_data(reader, entry, mode, obj)
         if run is not None:
             msg += f"\nRun: {run}, subrun: {subrun}, event: {event}"
+
+        # Reset stale selections when navigating to another event
+        navigation_triggers = {"button-load", "button-previous", "button-next"}
+        active_filter = [] if trigger in navigation_triggers else (object_filter or [])
+
+        # Build filter controls from the complete event before restricting objects
+        filter_options = build_object_filter_options(data, mode, obj)
+        data, visible_count, total_count = filter_event_objects(
+            data, mode, obj, active_filter
+        )
+        if active_filter:
+            hidden_count = total_count - visible_count
+            msg += (
+                f"\nHiding {hidden_count} of {total_count} {obj}; "
+                f"showing {visible_count}"
+            )
 
         # Set the geometry handler
         if detector is not None:
@@ -537,7 +572,7 @@ def register_callbacks(app):
             draw_crthits="crt" in draw_mode,
             matched_crthit_only="crt_match_only" in draw_mode,
             synchronize=False,  # Camera sync handled by clientside callback
-            split_traces="split_traces" in draw_mode,
+            split_traces=False,
         )
 
         # Set figure size to be responsive
@@ -569,6 +604,8 @@ def register_callbacks(app):
             msg,
             meta,
             "log-panel",
+            filter_options,
+            active_filter,
         )
 
     @app.callback(
