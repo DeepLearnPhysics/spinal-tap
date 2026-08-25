@@ -6,8 +6,54 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Changed
-- Replace per-object Plotly trace splitting with a searchable object-visibility
+- Replace per-object Plotly trace splitting with a searchable object-selection
   filter while retaining one combined point-cloud trace
+- Update the minimum `spine` dependency to v1.0.0
+- Reuse file-aware HDF5 readers and built events across presentation updates
+- Use a compact binary renderer-neutral scene transport and a dedicated WebGL 2
+  viewer by default, with Plotly retained as a selectable fallback
+- Keep one camera for split truth/reconstruction viewports and apply ordinary
+  object visibility, recoloring, and theme changes directly in the browser
+- Draw WebGL direction vectors as thick shafts with three-dimensional cone
+  heads that remain recognizable from every camera angle
+- Match the WebGL initial and reset view to SPINE's default Plotly camera
+- Fit the WebGL default camera to projected detector bounds so differently
+  shaped geometries receive consistent on-screen framing
+- Preserve the WebGL camera across display-option redraws while resetting to
+  the shared default when navigating between files or events
+- Keep the Plotly-matched WebGL viewing angle independent of geometry fitting
+- Move object visibility into separate reconstruction and truth controls in the
+  viewer toolbar, with optional one-hop linked match visibility
+- Hide the redundant Plotly trace legend while retaining color scales
+- Refresh loaded scenes automatically from display controls, committing costly
+  multi-select changes once their dropdown closes
+- Run the CLI without the development debugger unless `--debug` is specified
+
+### Added
+- Render points, marker symbols, line segments, arrow vectors, indexed or
+  wireframe meshes, and filled or wireframe boxes in the WebGL viewer
+- Add object picking, reset-view, and PNG-export controls to the WebGL viewer
+- Add versioned shared-view links which restore the file, entry, display
+  options, attributes, geometry, object filters, renderer and camera
+- Provide common WebGL/Plotly reset and PNG actions plus JSON view-state export,
+  with HDF5 and exported JSON paths handled by the same Data input and Load action
+  and import through the Share menu
+- Add distinct Path, local Browse, temporary Upload, and public URL source
+  modes, with a native file picker, chunked transfers, and a bounded
+  session-private cache
+- Accept content-detected HDF5, shared-view JSON, and UTF-8 file manifests with
+  arbitrary filenames, including relative records, comments, and globs
+- Separate opening a data source from entry/run navigation and move previous
+  and next arrows into the event toolbar
+- Add a compact Appearance popover for point size, opacity, continuous color
+  scale and transform, color-domain limits, scalar visibility ranges, and a
+  live, draggable value histogram without increasing the sidebar's resting
+  height
+
+### Fixed
+- Accept both `/data/...` and `/sdf/data/neutrino/...` paths for S3DF data
+- Preserve detector, optical, CRT, endpoint, direction, and vertex drawing in
+  renderer-neutral scenes
 
 ## [0.4.4] - 2026-07-17
 ### Added

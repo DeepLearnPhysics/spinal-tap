@@ -76,7 +76,14 @@ kubectl apply -f secret.yaml
 This deployment is pre-configured for SLAC S3DF with:
 - **Ingress**: `https://spinal-tap.slac.stanford.edu`
 - **Storage**: Read-only access to `/sdf/data/neutrino/spinal-tap/` via `sdf-data-neutrino` storage class
+- **Temporary cache**: 20 GiB of pod-local ephemeral storage for private browser
+  uploads and URL downloads, with a 2 GiB per-file limit and 24-hour idle TTL
 - **Namespace**: `spinal-tap`
+
+Browser uploads use sequential 32 MiB requests. The ingress allows 64 MiB per
+request, so this is not a 64 MiB total-file limit; files of hundreds of MiB are
+accepted normally. The cache is an `emptyDir`, so its contents are deliberately
+temporary and disappear when the pod is replaced.
 
 **For detailed configuration information** including:
 - How storage classes and filesystem paths work

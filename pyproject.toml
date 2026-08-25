@@ -14,7 +14,7 @@ maintainers = [
     {name = "Francois Drielsma", email = "drielsma@stanford.edu"}
 ]
 dependencies = [
-    "spine[viz]>=0.15.1",
+    "spine[viz]>=1.0.0",
     "dash>=4.4.0",
     "flask>=2.0.0",
     "flask-session>=0.5.0",
@@ -30,7 +30,8 @@ dev = [
     "black",
     "isort",
     "flake8",
-    "pytest"
+    "pytest",
+    "pytest-cov"
 ]
 
 [tool.setuptools.packages.find]
@@ -48,3 +49,28 @@ line_length = 88
 
 [tool.black]
 line-length = 88
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["test"]
+
+[tool.coverage.run]
+source = ["src/spinal_tap"]
+omit = [
+    "*/test/*",
+    "*/tests/*",
+    "setup.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "@(abc\\.)?abstractmethod",
+]

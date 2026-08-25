@@ -9,6 +9,7 @@ This guide provides detailed SLAC S3DF-specific configuration information for cu
 ## Table of Contents
 
 - [Storage Configuration](#storage-configuration)
+- [Temporary Source Cache](#temporary-source-cache)
 - [Authentication and Access Control](#authentication-and-access-control)
 - [Ingress Configuration](#ingress-configuration)
 - [Namespace Configuration](#namespace-configuration)
@@ -90,6 +91,37 @@ Inside the container, users will see:
 ```
 
 This allows you to selectively expose only the data you want accessible through Spinal Tap.
+
+## Temporary Source Cache
+
+The hosted application can accept files from a user's workstation without
+exposing a server-side filesystem browser. The browser sends the file in
+sequential 32 MiB requests, and the application assembles it in a private
+session directory under `/cache` before SPINE opens it. A source is published
+only after every chunk arrives and its content is recognized as HDF5, JSON, or
+a UTF-8 file manifest.
+
+The ingress permits 64 MiB request bodies. This is deliberately larger than
+one upload chunk and is not a total-file-size restriction. The deployment
+defaults are:
+
+```yaml
+SPINAL_TAP_CACHE_MAX_BYTES: 21474836480       # 20 GiB total
+SPINAL_TAP_CACHE_FILE_MAX_BYTES: 2147483648   # 2 GiB per file
+SPINAL_TAP_CACHE_TTL_SECONDS: 86400            # 24 hours idle
+```
+
+The cache volume is a 20 GiB `emptyDir` backed by pod-local ephemeral storage.
+It is intentionally non-persistent: cached sources disappear on pod restart or
+replacement, and a source cannot be shared with another browser session. The
+pod requests 2 GiB and is limited to 25 GiB of ephemeral storage so Kubernetes
+can account for both the cache and normal container scratch space.
+
+Authenticated deployments label the native file picker as Upload. Local,
+unauthenticated instances label the same control as Browse. In both cases the
+browser transfers the selected content because it cannot expose an absolute
+client path. Local users can select Path instead to open a known host path
+directly without making a temporary copy.
 
 ## Authentication and Access Control
 
@@ -247,4 +279,3 @@ This deployment follows patterns from [slaclab/slac-k8s-examples](https://github
 - **vCluster Access & Permissions**: `s3df-help@slac.stanford.edu`
 - **Storage Class Approvals**: `s3df-help@slac.stanford.edu`
 - **Application Issues**: [GitHub Issues](https://github.com/DeepLearnPhysics/spinal-tap/issues)
-
