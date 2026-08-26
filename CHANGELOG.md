@@ -5,63 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
-### Changed
-- Replace per-object Plotly trace splitting with a searchable object-selection
-  filter while retaining one combined point-cloud trace
-- Update the minimum `spine` dependency to v1.0.1
-- Reuse file-aware HDF5 readers and built events across presentation updates
-- Use a compact binary renderer-neutral scene transport and a dedicated WebGL 2
-  viewer by default, with Plotly retained as a selectable fallback
-- Keep one camera for split truth/reconstruction viewports and apply ordinary
-  object visibility, recoloring, and theme changes directly in the browser
-- Draw WebGL direction vectors as thick shafts with three-dimensional cone
-  heads that remain recognizable from every camera angle
-- Match the WebGL initial and reset view to SPINE's default Plotly camera
-- Fit the WebGL default camera to projected detector bounds so differently
-  shaped geometries receive consistent on-screen framing
-- Preserve the WebGL camera across display-option redraws while resetting to
-  the shared default when navigating between files or events
-- Keep the Plotly-matched WebGL viewing angle independent of geometry fitting
-- Move object visibility into separate reconstruction and truth controls in the
-  viewer toolbar, with optional one-hop linked match visibility
-- Hide the redundant Plotly trace legend while retaining color scales
-- Refresh loaded scenes automatically from display controls, committing costly
-  multi-select changes once their dropdown closes
-- Run the CLI without the development debugger unless `--debug` is specified
+
+## [1.0.0] - 2026-08-25
 
 ### Added
-- Render points, marker symbols, line segments, arrow vectors, indexed or
-  wireframe meshes, and filled or wireframe boxes in the WebGL viewer
-- Add object picking, reset-view, and PNG-export controls to the WebGL viewer
-- Add versioned shared-view links which restore the file, entry, display
-  options, attributes, geometry, object filters, renderer and camera
-- Provide common WebGL/Plotly reset and PNG actions plus JSON view-state export,
-  with HDF5 and exported JSON paths handled by the same Data input and Load action
-  and import through the Share menu
-- Add distinct Path, local Browse, temporary Upload, and public URL source
-  modes, with a native file picker, chunked transfers, and a bounded
-  session-private cache
-- Accept content-detected HDF5, shared-view JSON, and UTF-8 file manifests with
-  arbitrary filenames, including relative records, comments, and globs
-- Separate opening a data source from entry/run navigation and move previous
-  and next arrows into the event toolbar
-- Add a compact Appearance popover for point size, opacity, continuous color
-  scale and transform, color-domain limits, scalar visibility ranges, and a
-  live, draggable value histogram without increasing the sidebar's resting
-  height
-- Add renderer-independent click inspection with grouped object attributes,
-  direct reconstruction/truth match highlighting, and reversible matched
-  object isolation
-- Add PNG branding, WebGL GIF rotation, Plotly HTML export, keyboard shortcuts,
-  and a searchable in-application shortcut reference
-- Add detector-aware truth point sources, axis visibility, adaptive light/dark
-  themes, and a dedicated authenticated landing page
-- Enforce complete statement coverage in CI and publish reports to Codecov
+- **WebGL event display**: Add a dedicated WebGL 2 renderer for fast interaction with large renderer-neutral SPINE scenes containing points, marker symbols, line segments, arrow vectors, indexed or wireframe meshes, and filled or wireframe boxes.
+- **Renderer parity**: Retain Plotly as a selectable compatibility renderer and provide common camera, theme, filtering, hover, reset-view, and PNG-export behavior across both rendering paths.
+- **Object exploration**: Add searchable reconstruction and truth object filters, optional one-hop match linkage, click inspection with grouped attributes, direct match highlighting, and reversible matched-object isolation.
+- **Source handling**: Add distinct Path, local Browse, temporary Upload, and public URL source modes with a native file picker, retryable chunked transfers, bounded session-private caching, and progress reporting.
+- **Flexible inputs**: Detect HDF5 data, shared-view JSON, and UTF-8 file manifests by content, including extensionless sources, relative records, comments, globs, and equivalent S3DF host/container paths.
+- **Event navigation**: Separate source opening from entry or run/subrun/event navigation and provide previous/next controls plus keyboard shortcuts.
+- **Appearance controls**: Add point size and opacity controls, continuous color scales and transforms, automatic or manual color domains, scalar visibility ranges, a live draggable value histogram, axis visibility, and adaptive light/dark themes.
+- **Portable views**: Add versioned share links and JSON exports that restore the source, event, display options, attributes, geometry, object filters, renderer, appearance, and camera.
+- **Media exports**: Add optional SPINE/detector branding, WebGL rotating GIF export, Plotly standalone HTML export, and renderer-independent PNG output.
+- **Detector-aware display**: Add automatic geometry selection and restoration, physical detector up-axis handling, selectable truth point sources, and geometry-aware camera fitting.
+- **Application guidance**: Add a searchable keyboard-shortcut reference, contextual loading/error status, a focused authenticated landing page, and task-oriented Read the Docs documentation.
+- **Quality gates**: Enforce complete Python statement coverage, strict documentation builds, pre-commit formatting and linting, and Codecov publication in CI.
+
+### Changed
+- **Production-ready milestone**: Establish the accelerated renderer, inspection, sharing, deployment, and documentation contracts as the public baseline for the 1.x release series.
+- **SPINE integration**: Require SPINE v1.0.1 and consume its typed renderer-neutral scenes, field metadata, detector orientation, geometry, and Plotly compatibility backend.
+- **Client-side presentation**: Transport compact binary scenes to the browser and apply camera motion, visibility, recoloring, appearance, hover, and theme updates without rebuilding the event on the server.
+- **Caching model**: Reuse file-aware HDF5 readers, built events, downloaded sources, and serialized scenes across compatible presentation updates while enforcing configurable bounds.
+- **Camera behavior**: Synchronize split reconstruction/truth views when requested, preserve cameras across presentation updates, reset them for new events or files, and fit projected detector bounds without changing the Plotly-matched viewing angle.
+- **Auxiliary rendering**: Match endpoint, direction, and interaction-vertex colors to parent objects and render direction vectors as thick shafts with three-dimensional cone heads.
+- **Object visibility**: Replace Plotly legend-driven and per-object trace splitting with explicit searchable object controls while retaining combined point-cloud traces and color scales.
+- **Automatic refresh**: Refresh loaded scenes from display controls while applying multi-select changes when their menus close to avoid redundant server work.
+- **Production CLI**: Run without the Dash development debugger unless `--debug` is explicitly supplied.
+- **Script naming**: Rename the local Docker helper from `docker-run.sh` to `docker_run.sh` to match `check_coverage.sh` and SPINE's script naming convention.
 
 ### Fixed
-- Accept both `/data/...` and `/sdf/data/neutrino/...` paths for S3DF data
-- Preserve detector, optical, CRT, endpoint, direction, and vertex drawing in
-  renderer-neutral scenes
+- **S3DF path aliases**: Accept both `/data/...` and `/sdf/data/neutrino/...` paths for the same data source.
+- **Complete scene rendering**: Preserve detector geometry, raw points, optical flashes, CRT hits, endpoints, directions, vertices, hover metadata, color domains, and object filters across WebGL and Plotly.
+- **State restoration**: Apply shared or imported view state exactly once, load referenced Path or URL sources automatically, and reset entry-specific selections safely when the source changes.
+- **Responsive loading**: Prevent duplicate WebGL renders and loading flashes while reporting renderer transitions and long-running source operations consistently.
 
 ## [0.4.4] - 2026-07-17
 ### Added
@@ -74,9 +51,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [0.4.3] - 2026-05-13
 ### Fixed
-- Use `attr_names()` to populate valid SPINE hover attributes, including
-    derived quantities such as `RecoParticle.ke`, while excluding `points*`
-    location fields from the attribute dropdown.
+- Use `attr_names()` to populate valid SPINE hover attributes, including derived quantities such as `RecoParticle.ke`, while excluding `points*` location fields from the attribute dropdown.
 
 ## [0.4.2] - 2026-05-11
 ### Fixed
