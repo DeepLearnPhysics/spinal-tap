@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import pytest
 from dash import Dash, dcc, html, no_update
 from flask import Flask
+from spine.vis.scene import PointStyle
 
 import spinal_tap.callbacks as callback_module
 from spinal_tap.app import create_app
@@ -32,7 +33,6 @@ from spinal_tap.callbacks import (
     validate_view_state,
 )
 from spinal_tap.layout import get_layout
-from spine.vis.scene import PointStyle
 
 
 def registered_callback(app, name):

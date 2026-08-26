@@ -7,9 +7,6 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 from flask import Flask
-
-from spinal_tap.app import register_scene_routes
-from spinal_tap.scene import SceneEncoder, SceneStore, _json_value, scene_store
 from spine.vis import (
     BoxLayer,
     LineLayer,
@@ -20,6 +17,9 @@ from spine.vis import (
     SceneView,
     VectorLayer,
 )
+
+from spinal_tap.app import register_scene_routes
+from spinal_tap.scene import SceneEncoder, SceneStore, _json_value, scene_store
 
 
 def decode_header(payload):

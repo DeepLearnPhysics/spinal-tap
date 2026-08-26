@@ -11,7 +11,6 @@ from threading import RLock
 from typing import Any
 
 import numpy as np
-
 from spine.vis import (
     BoxLayer,
     LineLayer,

@@ -1,8 +1,7 @@
 """Defines the layout of the Spinal Tap application."""
 
-from dash import dcc, html
-
 import spine
+from dash import dcc, html
 from spine.geo.factories import geo_dict
 
 from .version import __version__

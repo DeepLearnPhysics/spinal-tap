@@ -6,10 +6,9 @@ from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
+import spine.data.out
 from dash import ctx, dcc, html, no_update
 from dash.dependencies import Input, Output, State
-
-import spine.data.out
 from spine.geo import GeoManager
 from spine.vis import Drawer, colorable_attributes, object_color_kind
 

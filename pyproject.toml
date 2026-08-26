@@ -47,6 +47,8 @@ version = {attr = "spinal_tap.version.__version__"}
 [tool.isort]
 profile = "black"
 line_length = 88
+known_first_party = ["spinal_tap"]
+known_third_party = ["spine"]
 
 [tool.black]
 line-length = 88

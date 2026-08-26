@@ -136,7 +136,7 @@ html[data-spinal-tap-theme="dark"] body .brand-logo-dark {
 
 .experiment-chip,
 .logout-link {
-  height: 30px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--line);
@@ -151,6 +151,8 @@ html[data-spinal-tap-theme="dark"] body .brand-logo-dark {
 }
 
 .logout-link {
+  border-color: var(--line-strong);
+  background: var(--control-muted);
   text-decoration: none;
 }
 
@@ -195,8 +197,8 @@ html[data-spinal-tap-theme="dark"] body .brand-logo-dark {
 }
 
 .help-menu > summary {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
