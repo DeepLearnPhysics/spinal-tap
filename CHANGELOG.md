@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-26
+
+### Changed
+- **Export filenames**: Name PNG, GIF, HTML, and JSON exports from the loaded source, entry number, run mode, and object type, with URL-aware source extraction and bounded filename stems.
+
 ## [1.0.1] - 2026-08-25
 
 ### Added
