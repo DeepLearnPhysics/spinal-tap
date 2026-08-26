@@ -136,7 +136,7 @@ html[data-spinal-tap-theme="dark"] body .brand-logo-dark {
 
 .experiment-chip,
 .logout-link {
-  min-height: 28px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--line);
@@ -195,8 +195,8 @@ html[data-spinal-tap-theme="dark"] body .brand-logo-dark {
 }
 
 .help-menu > summary {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
