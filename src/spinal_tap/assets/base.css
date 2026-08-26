@@ -263,6 +263,23 @@ html[data-spinal-tap-theme="dark"] body .brand-logo-dark {
   font-weight: 800;
 }
 
+.help-documentation-link {
+  display: block;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--spine-orange-dark);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.help-documentation-link:hover,
+.help-documentation-link:focus-visible {
+  color: var(--spine-orange);
+  text-decoration: underline;
+}
+
 .theme-toggle-label,
 .renderer-toggle-label {
   width: 92px;

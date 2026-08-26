@@ -247,6 +247,39 @@ def validate_view_state(state):
     return state
 
 
+def restored_object_filter(state, reco_options, truth_options):
+    """Resolve a saved object selection against the current event options.
+
+    Parameters
+    ----------
+    state : dict
+        Validated shared-view state.
+    reco_options : list of dict
+        Available reconstructed-object dropdown options.
+    truth_options : list of dict
+        Available truth-object dropdown options.
+
+    Returns
+    -------
+    list of str
+        Saved object keys that remain available in the restored event. A
+        missing selection retains the backward-compatible all-visible state.
+    """
+
+    objects = state.get("objects") or {}
+
+    def resolve(saved, options):
+        available = [option["value"] for option in options]
+        if saved is None or saved == "all":
+            return available
+        valid = set(available)
+        return [value for value in saved if value in valid]
+
+    return resolve(objects.get("reco"), reco_options) + resolve(
+        objects.get("truth"), truth_options
+    )
+
+
 def load_view_state(file_path):
     """Read and validate a shared-view JSON file from a server path.
 
@@ -1685,15 +1718,24 @@ def register_callbacks(app):
                 return window.dash_clientside.no_update;
             }
 
+            const resolveSelection = function(saved, options) {
+                const available = (options || []).map(option => option.value);
+                if (saved == null || saved === 'all') return available;
+                const valid = new Set(available);
+                return (saved || []).filter(value => valid.has(value));
+            };
+            const objects = pending.objects || {};
+            const reco = resolveSelection(objects.reco, recoOptions);
+            const truth = resolveSelection(objects.truth, truthOptions);
+
             // Wait for the object-filter callback to acknowledge the newly
-            // loaded event's neutral all-visible baseline. Applying a shared
-            // subset before that acknowledgement would let the reset overwrite
-            // the restored selection on the next browser turn.
+            // loaded event's restored baseline. Applying the remaining control
+            // state before that acknowledgement would let a late reset
+            // overwrite the saved selection on the next browser turn.
             const baseline = new Set(objectFilter || []);
-            const allObjects = (recoOptions || []).concat(truthOptions || [])
-                .map(option => option.value);
-            if (allObjects.length &&
-                    !allObjects.every(value => baseline.has(value))) {
+            const expectedObjects = reco.concat(truth);
+            if (baseline.size !== expectedObjects.length ||
+                    !expectedObjects.every(value => baseline.has(value))) {
                 return window.dash_clientside.no_update;
             }
 
@@ -1702,15 +1744,6 @@ def register_callbacks(app):
             const display = pending.display || {};
             const attributes = pending.attributes || {};
             const overlays = display.overlays || [];
-            const resolveSelection = function(saved, options) {
-                const available = (options || []).map(option => option.value);
-                if (saved === 'all') return available;
-                const valid = new Set(available);
-                return (saved || []).filter(value => valid.has(value));
-            };
-            const objects = pending.objects || {};
-            const reco = resolveSelection(objects.reco, recoOptions);
-            const truth = resolveSelection(objects.truth, truthOptions);
 
             // Reflect the already-rendered shared state into the controls only
             // after its source and entry are on screen. Doing this earlier can
@@ -3385,10 +3418,18 @@ def register_callbacks(app):
         all_truth = [option["value"] for option in truth_options]
         all_objects = all_reco + all_truth
 
-        # Select every object by default when navigating to another event
-        active_filter = (
-            all_objects if trigger in FILTER_RESET_TRIGGERS else (object_filter or [])
-        )
+        # A restored view owns its object subset during the initial render.
+        # Ordinary navigation still resets the new event to all visible objects.
+        if restoring_view:
+            active_filter = restored_object_filter(
+                restored_state, reco_options, truth_options
+            )
+        else:
+            active_filter = (
+                all_objects
+                if trigger in FILTER_RESET_TRIGGERS
+                else (object_filter or [])
+            )
         filtered_data, visible_count, total_count = filter_event_objects(
             data, mode, obj, active_filter
         )
@@ -3596,8 +3637,12 @@ def register_callbacks(app):
                     "subrun": subrun,
                     "event": event,
                     "use_run": use_run,
-                    "reco_filter": all_reco,
-                    "truth_filter": all_truth,
+                    "reco_filter": [
+                        key for key in active_filter if key.startswith("reco:")
+                    ],
+                    "truth_filter": [
+                        key for key in active_filter if key.startswith("truth:")
+                    ],
                     "filter_revision": [
                         trigger,
                         n_clicks_load,

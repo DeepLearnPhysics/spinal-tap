@@ -1180,6 +1180,16 @@ def app_header(experiment=None, show_help=False):
                                             ],
                                             className="help-shortcut-row",
                                         ),
+                                        html.A(
+                                            "Read the documentation",
+                                            href=(
+                                                "https://spinal-tap.readthedocs.io/"
+                                                "stable/"
+                                            ),
+                                            target="_blank",
+                                            rel="noopener noreferrer",
+                                            className="help-documentation-link",
+                                        ),
                                     ],
                                     className="help-popover",
                                 ),

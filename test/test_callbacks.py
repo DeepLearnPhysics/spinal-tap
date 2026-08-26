@@ -29,6 +29,7 @@ from spinal_tap.callbacks import (
     overlay_control_state,
     parse_optional_int,
     register_callbacks,
+    restored_object_filter,
     validate_manifest_access,
     validate_view_state,
 )
@@ -179,6 +180,24 @@ def test_entry_label_reports_zero_based_index_range():
     """The entry chip should show the current and maximum valid indexes."""
     assert format_entry_label(0, 100) == "Entry 0/99"
     assert format_entry_label(99, 100) == "Entry 99/99"
+
+
+def test_restored_object_filter_resolves_saved_subsets():
+    """Saved subsets should retain valid keys and default missing sides to all."""
+    reco = [{"value": "reco:0"}, {"value": "reco:1"}]
+    truth = [{"value": "truth:0"}, {"value": "truth:1"}]
+
+    assert restored_object_filter(
+        {"objects": {"reco": ["reco:1", "reco:9"], "truth": []}},
+        reco,
+        truth,
+    ) == ["reco:1"]
+    assert restored_object_filter({}, reco, truth) == [
+        "reco:0",
+        "reco:1",
+        "truth:0",
+        "truth:1",
+    ]
 
 
 def test_browse_navigation_uses_loaded_hdf5_source():
@@ -1588,7 +1607,12 @@ def test_graph_callback_restores_json_and_reports_draw_errors(
     monkeypatch.setattr(
         callback_module,
         "load_view_state",
-        lambda path: {"version": 1, "file": "/tmp/events.h5", "entry": 0},
+        lambda path: {
+            "version": 1,
+            "file": "/tmp/events.h5",
+            "entry": 0,
+            "objects": {"reco": [], "truth": "all"},
+        },
     )
     result = graph_callback(
         **graph_arguments(file_path="/tmp/view.json", source_mode="browse")
@@ -1596,6 +1620,9 @@ def test_graph_callback_restores_json_and_reports_draw_errors(
     assert isinstance(result[0], html.Div)
     assert result[16]["import_mode"] == "browse"
     assert result[7] == "log-panel is-success"
+    assert result[9] == []
+    assert result[14]["reco_filter"] == []
+    assert result[0].to_plotly_json()["props"]["data-selection"] == ""
 
     monkeypatch.setattr(callback_module, "classify_source", lambda path: ("hdf5", path))
     FakeDrawer.fail = True
@@ -1720,6 +1747,7 @@ def test_graph_callback_renders_shared_view_atomically(graph_callback, monkeypat
         },
         "attributes": {"hover": ["energy", "shape"], "color": "shape"},
         "geometry": {"mode": "manual", "detector": "2x2", "tag": "v1"},
+        "objects": {"reco": [], "truth": "all"},
     }
     monkeypatch.setattr(
         callback_module,
@@ -1744,6 +1772,8 @@ def test_graph_callback_renders_shared_view_atomically(graph_callback, monkeypat
     assert isinstance(result[0], dcc.Graph)
     assert result[1] == 1
     assert result[14]["file_path"] == "https://example.org/shared-events.h5"
+    assert result[9] == []
+    assert result[14]["reco_filter"] == []
     plotly_call = next(call for call in FakeDrawer.calls if call[0] == "plotly")
     assert plotly_call[1][1] == ["energy", "shape"]
     assert plotly_call[2]["color_attr"] == "shape"

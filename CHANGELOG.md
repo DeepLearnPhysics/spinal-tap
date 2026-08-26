@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-25
+
+### Added
+- **Documentation access**: Link directly to the stable Spinal Tap documentation from the keyboard-shortcut help popover.
+
+### Fixed
+- **Imported object filters**: Apply saved reconstructed and truth object selections during the initial JSON-view render instead of briefly resetting the imported event to all objects.
+
 ## [1.0.0] - 2026-08-25
 
 ### Added

@@ -26,6 +26,23 @@ def component_by_id(component, component_id):
     return None
 
 
+def component_by_class(component, class_name):
+    """Find a Dash component recursively by CSS class."""
+    classes = (getattr(component, "className", None) or "").split()
+    if class_name in classes:
+        return component
+    children = getattr(component, "children", None)
+    if children is None:
+        return None
+    if not isinstance(children, (list, tuple)):
+        children = [children]
+    for child in children:
+        result = component_by_class(child, class_name)
+        if result is not None:
+            return result
+    return None
+
+
 def test_display_controls_do_not_use_split_traces():
     """The display controls should omit the obsolete split-trace option."""
     controls = display_controls()
@@ -350,6 +367,10 @@ def test_help_is_only_present_in_the_main_header():
     assert help_menu is not None
     assert help_menu.children[0].children == "?"
     assert help_menu.children[0].title == "Keyboard shortcuts"
+    documentation = component_by_class(help_menu, "help-documentation-link")
+    assert documentation.children == "Read the documentation"
+    assert documentation.href == "https://spinal-tap.readthedocs.io/stable/"
+    assert documentation.target == "_blank"
 
 
 def test_login_uses_dedicated_branded_layout():
