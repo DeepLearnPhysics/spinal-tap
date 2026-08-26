@@ -1,0 +1,92 @@
+/* Keep the documentation visually aligned with the application and SPINE. */
+
+:root {
+  --tap-orange: #f47c13;
+  --tap-orange-dark: #c95f05;
+  --tap-orange-soft: #fff3e6;
+  --tap-charcoal: #151719;
+  --tap-border: #e7ddd2;
+}
+
+.wy-side-nav-search,
+.wy-nav-top {
+  background: var(--tap-charcoal);
+}
+
+.wy-side-nav-search {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wy-nav-side {
+  background: #1a1a1a;
+}
+
+.wy-menu-vertical a {
+  color: #d9d9d9;
+}
+
+.wy-menu-vertical a:hover,
+.wy-menu-vertical a:focus {
+  background: rgba(244, 124, 19, 0.12);
+  color: #ffffff;
+}
+
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.current > a:hover {
+  border-left: 3px solid var(--tap-orange);
+}
+
+.wy-nav-content {
+  max-width: 980px;
+}
+
+.wy-nav-content a,
+.rst-content a {
+  color: var(--tap-orange-dark);
+}
+
+.wy-nav-content a:hover,
+.rst-content a:hover {
+  color: var(--tap-orange);
+}
+
+.rst-content .lead p {
+  color: #3d3d3d;
+  font-size: 1.08rem;
+  line-height: 1.75;
+}
+
+.rst-content .admonition,
+.rst-content .note,
+.rst-content .tip,
+.rst-content .important {
+  background: var(--tap-orange-soft);
+  border: 1px solid var(--tap-border);
+  border-left: 4px solid var(--tap-orange);
+  box-shadow: none;
+}
+
+.rst-content .admonition-title,
+.rst-content .note .admonition-title,
+.rst-content .tip .admonition-title,
+.rst-content .important .admonition-title {
+  background: rgba(244, 124, 19, 0.14);
+  color: var(--tap-charcoal);
+}
+
+.rst-content div[class^="highlight"],
+.rst-content pre.literal-block {
+  border: 1px solid var(--tap-border);
+  border-top: 3px solid var(--tap-orange);
+  border-radius: 4px;
+}
+
+.rst-content code.literal,
+.rst-content tt.literal {
+  color: var(--tap-orange-dark);
+}
+
+.rst-content table.docutils:not(.field-list) thead th {
+  background: #fff7ef;
+  border-bottom: 2px solid var(--tap-orange);
+}

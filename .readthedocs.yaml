@@ -1,0 +1,24 @@
+# Read the Docs configuration for Spinal Tap.
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+  jobs:
+    post_create_environment:
+      - pip install --upgrade pip setuptools wheel
+
+sphinx:
+  configuration: docs/source/conf.py
+  fail_on_warning: true
+
+formats:
+  - pdf
+  - epub
+
+python:
+  install:
+    - requirements: docs/requirements_rtd.txt
+    - method: pip
+      path: .

@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/DeepLearnPhysics/spinal-tap/actions/workflows/ci.yml/badge.svg)](https://github.com/DeepLearnPhysics/spinal-tap/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/DeepLearnPhysics/spinal-tap/branch/main/graph/badge.svg)](https://codecov.io/gh/DeepLearnPhysics/spinal-tap)
+[![Documentation Status](https://readthedocs.org/projects/spinal-tap/badge/?version=latest)](https://spinal-tap.readthedocs.io/en/latest/?badge=latest)
 [![PyPI version](https://badge.fury.io/py/spinal-tap.svg)](https://badge.fury.io/py/spinal-tap)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/downloads/)
 
