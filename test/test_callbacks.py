@@ -748,6 +748,9 @@ def test_application_serves_webgl_asset_and_callback_graph():
     assert b"restoreCamera" in share_asset.data
     assert b"stableAttempts >= 10" in share_asset.data
     assert b"downloadJson" in share_asset.data
+    assert b"exportBaseName" in share_asset.data
+    assert b"function sourceStem(source)" in share_asset.data
+    assert b".slice(0, 48)" in share_asset.data
     assert b"resetView" in share_asset.data
     assert b"saveImage" in share_asset.data
     assert b"saveGif" in share_asset.data
@@ -769,13 +772,15 @@ def test_application_serves_webgl_asset_and_callback_graph():
     assert b'name.includes("2x2")' in share_asset.data
     assert b'name.includes("nd-lar")' in share_asset.data
     assert b'name.includes("ndlar")' not in share_asset.data
-    assert b'link.download = "spinal_tap_event_display.html"' in share_asset.data
-    assert b"async saveImage(overlay = null)" in asset.data
+    assert b"`${exportBaseName(state)}.html`" in share_asset.data
+    assert b"`${exportBaseName(payload)}.json`" in share_asset.data
+    assert b'async saveImage(filename = "spinal_tap_event_display.png"' in asset.data
     assert (
         b"await this.drawGifOverlay(context, output.width, output.height)" in asset.data
     )
     assert b"if (overlay) await overlay" in asset.data
-    assert b"async saveGif(progress" in asset.data
+    assert b"async saveGif(" in asset.data
+    assert b'filename = "spinal_tap_event_display.gif"' in asset.data
     assert b"const frames = 180" in asset.data
     assert b"const frameDelay = 2" in asset.data
     assert b"reportError" in share_asset.data

@@ -774,7 +774,7 @@
             );
         }
 
-        async saveImage(overlay = null) {
+        async saveImage(filename = "spinal_tap_event_display.png", overlay = null) {
             this.draw();
             const output = document.createElement("canvas");
             output.width = this.canvas.width;
@@ -785,7 +785,7 @@
             await this.drawGifOverlay(context, output.width, output.height);
             if (overlay) await overlay(context, output.width, output.height);
             const link = document.createElement("a");
-            link.download = "spinal_tap_event_display.png";
+            link.download = filename;
             link.href = output.toDataURL("image/png");
             link.click();
         }
@@ -850,7 +850,11 @@
             });
         }
 
-        async saveGif(progress = () => {}, overlay = null) {
+        async saveGif(
+            progress = () => {},
+            filename = "spinal_tap_event_display.gif",
+            overlay = null
+        ) {
             if (!window.spinalTapGif?.Encoder) {
                 throw new Error("The GIF encoder is not available.");
             }
@@ -898,7 +902,7 @@
                 const blob = encoder.finish();
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement("a");
-                link.download = "spinal_tap_event_display.gif";
+                link.download = filename;
                 link.href = url;
                 link.click();
                 setTimeout(() => URL.revokeObjectURL(url), 0);

@@ -41,6 +41,39 @@
         return Boolean(document.querySelector("#theme-toggle input")?.checked);
     }
 
+    function sourceStem(source) {
+        let value = String(source || "").trim();
+        let fallback = "spinal-tap";
+        try {
+            const url = new URL(value);
+            value = url.pathname;
+            fallback = url.hostname || fallback;
+        } catch (_) {
+            value = value.split(/[?#]/, 1)[0];
+        }
+
+        const parts = value.replaceAll("\\", "/").split("/").filter(Boolean);
+        value = parts.at(-1) || fallback;
+        try {
+            value = decodeURIComponent(value);
+        } catch (_) {
+            // Keep malformed URL escapes literal and sanitize them below.
+        }
+        value = value.replace(/\.(?:h5|hdf5|json|txt|list)$/i, "");
+        value = value
+            .replace(/[^a-zA-Z0-9_-]+/g, "_")
+            .replace(/^_+|_+$/g, "")
+            .replace(/_+/g, "_");
+        return (value || fallback).slice(0, 48);
+    }
+
+    function exportBaseName(state) {
+        const entry = Number.isInteger(state?.entry) ? state.entry : 0;
+        const mode = String(state?.display?.run_mode || "reco");
+        const object = String(state?.display?.object || "particles");
+        return `${sourceStem(state?.file)}_entry-${entry}_${mode}-${object}`;
+    }
+
     async function brandingAssets(state) {
         const branding = state?.branding || {};
         const enabled = new Set(branding.watermarks || ["spine"]);
@@ -297,9 +330,12 @@
         const viewer = document.querySelector(".webgl-viewer")
             ?._spinalTapViewer;
         if (viewer) {
-            await viewer.saveImage((context, width, height) => {
-                drawBranding(context, width, height, assets);
-            });
+            await viewer.saveImage(
+                `${exportBaseName(state)}.png`,
+                (context, width, height) => {
+                    drawBranding(context, width, height, assets);
+                }
+            );
             return;
         }
 
@@ -311,7 +347,7 @@
         try {
             await Plotly.downloadImage(graph, {
                 format: "png",
-                filename: "spinal_tap_event_display",
+                filename: exportBaseName(state),
                 scale: 2
             });
         } finally {
@@ -324,9 +360,13 @@
             ?._spinalTapViewer;
         if (!viewer) throw new Error("GIF export is available in WebGL mode.");
         const assets = await brandingAssets(state);
-        await viewer.saveGif(progress, (context, width, height) => {
-            drawBranding(context, width, height, assets);
-        });
+        await viewer.saveGif(
+            progress,
+            `${exportBaseName(state)}.gif`,
+            (context, width, height) => {
+                drawBranding(context, width, height, assets);
+            }
+        );
     }
 
     function serializablePlotlyFigure(graph) {
@@ -406,7 +446,7 @@
         const link = document.createElement("a");
         const objectUrl = URL.createObjectURL(blob);
         link.href = objectUrl;
-        link.download = "spinal_tap_event_display.html";
+        link.download = `${exportBaseName(state)}.html`;
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -421,7 +461,7 @@
         const link = document.createElement("a");
         const objectUrl = URL.createObjectURL(blob);
         link.href = objectUrl;
-        link.download = `spinal-tap-entry-${payload.entry}.json`;
+        link.download = `${exportBaseName(payload)}.json`;
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -473,6 +513,7 @@
         cancelCameraRestore,
         decodeHash,
         downloadJson,
+        exportBaseName,
         rememberPlotlyCamera,
         reportError,
         resetView,
