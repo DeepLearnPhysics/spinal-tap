@@ -29,6 +29,18 @@ spec:
           value: "true"
         - name: SPINAL_TAP_SHARED_FOLDERS
           value: "/data/generic,/data/public_html"
+        - name: SPINAL_TAP_ALLOW_UPLOADS
+          value: "true"
+        - name: SPINAL_TAP_ALLOW_URLS
+          value: "true"
+        - name: SPINAL_TAP_CACHE_DIR
+          value: "/cache"
+        - name: SPINAL_TAP_CACHE_MAX_BYTES
+          value: "21474836480"
+        - name: SPINAL_TAP_CACHE_FILE_MAX_BYTES
+          value: "2147483648"
+        - name: SPINAL_TAP_CACHE_TTL_SECONDS
+          value: "86400"
         - name: SECRET_KEY
           valueFrom:
             secretKeyRef:
@@ -58,13 +70,17 @@ spec:
         - name: data
           mountPath: /data
           readOnly: true
+        - name: cache
+          mountPath: /cache
         resources:
           requests:
             memory: "512Mi"
             cpu: "250m"
+            ephemeral-storage: "2Gi"
           limits:
             memory: "2Gi"
             cpu: "1000m"
+            ephemeral-storage: "25Gi"
         livenessProbe:
           httpGet:
             path: /
@@ -85,3 +101,6 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: spinal-tap-data
+      - name: cache
+        emptyDir:
+          sizeLimit: "20Gi"

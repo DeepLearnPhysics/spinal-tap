@@ -28,6 +28,9 @@ MANIFEST
 
 # Pytest
 .cache/
+.coverage
+coverage*.xml
+htmlcov/
 
 # MacOS
 .DS_Store

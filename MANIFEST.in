@@ -1,1 +1,1 @@
-recursive-include spinal_tap/assets *
+recursive-include src/spinal_tap/assets *
