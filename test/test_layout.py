@@ -5,6 +5,7 @@ from spinal_tap.layout import (
     app_header,
     attribute_controls,
     display_controls,
+    login_form,
     main_layout,
 )
 
@@ -140,6 +141,21 @@ def test_scene_overlays_use_direct_controls():
     assert rows.children is None
     assert hover.className == "attribute-picker-state"
     assert color.className == "attribute-picker-state"
+
+
+def test_viewer_contains_renderer_independent_object_inspector():
+    """The canvas should expose one shared inspector for both renderers."""
+    layout = main_layout()
+    inspector = component_by_id(layout, "object-inspector")
+
+    assert inspector.__class__.__name__ == "Aside"
+    assert inspector.hidden is True
+    assert component_by_id(layout, "store-inspected-object") is not None
+    assert component_by_id(layout, "store-inspection-highlights") is not None
+    assert component_by_id(layout, "button-close-inspector") is not None
+    isolate = component_by_id(layout, "button-isolate-object")
+    assert isolate.children == "Show only"
+    assert isolate.__dict__["aria-pressed"] == "false"
 
 
 def test_layout_contains_refresh_state_stores():
@@ -334,3 +350,37 @@ def test_help_is_only_present_in_the_main_header():
     assert help_menu is not None
     assert help_menu.children[0].children == "?"
     assert help_menu.children[0].title == "Keyboard shortcuts"
+
+
+def test_login_uses_dedicated_branded_layout():
+    """The login surface should omit controls that require a loaded event."""
+    layout = login_form()
+
+    assert "login-root" in layout.className
+    assert component_by_id(layout, "renderer-toggle") is None
+    assert component_by_id(layout, "theme-toggle") is None
+    assert component_by_id(layout, "help-menu") is None
+    assert component_by_id(layout, "experiment-select") is not None
+    assert component_by_id(layout, "password-input") is not None
+    assert component_by_id(layout, "login-button") is not None
+
+    stack = layout.children[1].children
+    logos = stack.children[0].children
+    assert [logo.src for logo in logos] == [
+        "/assets/spinal-tap-logo-black.png",
+        "/assets/spinal-tap-logo-white.png",
+    ]
+    assert stack.children[1].children[0].children == "Sign in"
+    versions = [child.children for child in stack.children[2].children]
+    assert versions[0].startswith("Tap ")
+    assert versions[1] == "·"
+    assert versions[2].startswith("SPINE ")
+
+
+def test_main_layout_bootstraps_browser_theme_preference():
+    """The authenticated UI should initialize its toggle from the browser."""
+    layout = main_layout()
+
+    bootstrap = component_by_id(layout, "store-theme-bootstrap")
+    assert bootstrap is not None
+    assert bootstrap.data is True

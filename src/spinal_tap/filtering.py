@@ -23,7 +23,7 @@ def _compact_count(value: int) -> str:
 
 
 def attach_object_filter_metadata(
-    figure: Any, scene: Any, revision: int, selection: list[str] | None = None
+    figure: Any, scene: Any, revision: int | str, selection: list[str] | None = None
 ) -> None:
     """Attach compact object boundaries to combined point-cloud traces.
 
@@ -33,7 +33,7 @@ def attach_object_filter_metadata(
         Figure containing combined reconstruction and truth point traces.
     scene : spine.vis.Scene
         Renderer-neutral scene used to construct object point buffers.
-    revision : int
+    revision : int or str
         Unique render revision used to invalidate browser-side array caches.
     selection : list[str], optional
         Object-filter selection associated with this figure render.
@@ -43,12 +43,14 @@ def attach_object_filter_metadata(
     RuntimeError
         If a combined object trace cannot be identified unambiguously.
     """
-    figure.update_layout(
-        meta={
+    layout_metadata = dict(figure.layout.meta or {})
+    layout_metadata.update(
+        {
             "spinal_tap_filter_revision": revision,
             "spinal_tap_filter_selection": selection or [],
         }
     )
+    figure.update_layout(meta=layout_metadata)
 
     for view in scene.views:
         for layer in view.layers:
@@ -70,12 +72,20 @@ def attach_object_filter_metadata(
                     f"found {len(matches)}."
                 )
 
-            matches[0].meta = {
-                "spinal_tap_filter": {
-                    "prefix": prefix,
-                    "offsets": layer.object_offsets.tolist(),
-                }
+            object_count = len(layer.object_offsets) - 1
+            keys = [key for key in (selection or []) if key.startswith(f"{prefix}:")]
+            keys.sort(key=lambda key: int(key.split(":", 1)[1]))
+            if len(keys) != object_count:
+                keys = [f"{prefix}:{index}" for index in range(object_count)]
+
+            trace_metadata = dict(matches[0].meta or {})
+            trace_metadata["spinal_tap_filter"] = {
+                "prefix": prefix,
+                "family": object_name.split("_", 1)[1],
+                "offsets": layer.object_offsets.tolist(),
+                "keys": keys,
             }
+            matches[0].meta = trace_metadata
 
 
 def get_object_prefixes(mode: str) -> list[str]:

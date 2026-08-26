@@ -14,10 +14,12 @@ from spine.geo import GeoManager
 from spine.vis import Drawer, colorable_attributes, object_color_kind
 
 from .filtering import (
+    attach_object_filter_metadata,
     build_object_filter_options,
     build_object_match_links,
     filter_event_objects,
 )
+from .inspection import inspect_object, object_collection_key
 from .scene import scene_store
 from .source import read_file_manifest
 from .utils import (
@@ -941,6 +943,360 @@ def register_callbacks(app):
     app : dash.Dash
          Dash application
     """
+
+    app.clientside_callback(
+        """
+        function(clickData, closeClicks, loadedEvent) {
+            const trigger = window.dash_clientside.callback_context.triggered_id;
+            if (trigger === 'button-close-inspector' ||
+                    trigger === 'store-loaded-event') {
+                document.querySelectorAll('.webgl-viewer').forEach(root =>
+                    root._spinalTapViewer?.clearInspection?.()
+                );
+                return null;
+            }
+            if (trigger !== 'graph-evd' || !clickData?.points?.length) {
+                return window.dash_clientside.no_update;
+            }
+
+            const point = clickData.points[0];
+            const plot = document.querySelector('#graph-evd .js-plotly-plot');
+            const trace = plot?.data?.[point.curveNumber];
+            const config = trace?.meta?.spinal_tap_filter;
+            if (!config || point.pointNumber == null) {
+                return window.dash_clientside.no_update;
+            }
+
+            const offsets = config.offsets || [];
+            let objectIndex = -1;
+            for (let index = 0; index + 1 < offsets.length; index++) {
+                if (point.pointNumber >= offsets[index] &&
+                        point.pointNumber < offsets[index + 1]) {
+                    objectIndex = index;
+                    break;
+                }
+            }
+            if (objectIndex < 0) return window.dash_clientside.no_update;
+
+            const key = (config.keys || [])[objectIndex] ||
+                `${config.prefix}:${objectIndex}`;
+            return {
+                key: key,
+                prefix: config.prefix,
+                position: Number(key.split(':')[1]),
+                family: config.family || 'particles',
+                renderer: 'plotly',
+                revision: Date.now()
+            };
+        }
+        """,
+        Output("store-inspected-object", "data"),
+        Input("graph-evd", "clickData", allow_optional=True),
+        Input("button-close-inspector", "n_clicks"),
+        Input("store-loaded-event", "data"),
+        prevent_initial_call=True,
+    )
+
+    app.clientside_callback(
+        """
+        function(nClicks, selection, action, mode, recoSelection,
+                 truthSelection, recoOptions, truthOptions, links) {
+            if (!nClicks || !selection?.key) {
+                return window.dash_clientside.no_update;
+            }
+            const available = {
+                reco: new Set((recoOptions || []).map(option => option.value)),
+                truth: new Set((truthOptions || []).map(option => option.value))
+            };
+            const current = {
+                reco: (recoSelection || []).filter(key => available.reco.has(key)),
+                truth: (truthSelection || []).filter(key => available.truth.has(key))
+            };
+            let next;
+            let nextAction;
+            if (action?.active && action.key === selection.key) {
+                next = {
+                    reco: (action.previous?.reco || []).filter(
+                        key => available.reco.has(key)
+                    ),
+                    truth: (action.previous?.truth || []).filter(
+                        key => available.truth.has(key)
+                    )
+                };
+                nextAction = {active: false, revision: Date.now()};
+            } else {
+                next = {reco: [], truth: []};
+                next[selection.prefix] = [selection.key];
+                if (mode === 'both') {
+                    const other = selection.prefix === 'reco' ? 'truth' : 'reco';
+                    next[other] = (links?.[selection.key] || []).filter(
+                        key => available[other].has(key)
+                    );
+                }
+                nextAction = {
+                    active: true,
+                    key: selection.key,
+                    // Keep the selection from before isolation began, even if
+                    // the user moves directly from one isolated object to
+                    // another. "Show all" then returns to the original view.
+                    previous: action?.active ? action.previous : current,
+                    revision: Date.now()
+                };
+            }
+
+            // Update the pair as one transaction. This prevents the regular
+            // linked-filter callback from treating the two set_props echoes as
+            // independent user edits and recursively expanding the selection.
+            const filterState = window._spinalTapFilterState || {};
+            window._spinalTapFilterState = Object.assign({}, filterState, {
+                reco: new Set(next.reco),
+                truth: new Set(next.truth),
+                acknowledgement: null,
+                resetAcknowledgements: {
+                    reco: [...next.reco],
+                    truth: [...next.truth]
+                }
+            });
+            window.dash_clientside.set_props(
+                'dropdown-reco-filter', {value: [...next.reco]}
+            );
+            window.dash_clientside.set_props(
+                'dropdown-truth-filter', {value: [...next.truth]}
+            );
+            return nextAction;
+        }
+        """,
+        Output("store-inspection-action", "data"),
+        Input("button-isolate-object", "n_clicks"),
+        State("store-inspected-object", "data"),
+        State("store-inspection-action", "data"),
+        State("radio-run-mode", "value"),
+        State("dropdown-reco-filter", "value"),
+        State("dropdown-truth-filter", "value"),
+        State("dropdown-reco-filter", "options"),
+        State("dropdown-truth-filter", "options"),
+        State("store-object-match-links", "data"),
+        prevent_initial_call=True,
+    )
+
+    app.clientside_callback(
+        """
+        function(action, selection) {
+            const active = Boolean(
+                action?.active && selection?.key === action.key
+            );
+            return [
+                active ? 'Show all' : 'Show only',
+                active
+                    ? 'viewer-action-button is-active'
+                    : 'viewer-action-button',
+                active ? 'true' : 'false',
+                active
+                    ? 'Restore the previous object selection'
+                    : 'Show only this object and its one-hop matches'
+            ];
+        }
+        """,
+        Output("button-isolate-object", "children"),
+        Output("button-isolate-object", "className"),
+        Output("button-isolate-object", "aria-pressed"),
+        Output("button-isolate-object", "title"),
+        Input("store-inspection-action", "data"),
+        Input("store-inspected-object", "data"),
+    )
+
+    app.clientside_callback(
+        """
+        function(selection, links) {
+            const matches = selection?.key ? (links?.[selection.key] || []) : [];
+            document.querySelectorAll('.webgl-viewer').forEach(root =>
+                root._spinalTapViewer?.setInspectionMatches?.(selection, matches)
+            );
+
+            const plot = document.querySelector('#graph-evd .js-plotly-plot');
+            if (plot && window.Plotly) {
+                const overlays = [];
+                const overlayIndices = [];
+                (plot.data || []).forEach((trace, index) => {
+                    if (trace.meta?.spinal_tap_inspection_overlay) {
+                        overlayIndices.push(index);
+                    }
+                });
+                if (overlayIndices.length) {
+                    window.Plotly.deleteTraces(plot, overlayIndices.reverse());
+                }
+
+                const addOverlay = function(keys, opacity, label) {
+                    if (!keys.length) return;
+                    const wanted = new Set(keys);
+                    const x = [], y = [], z = [];
+                    let baseSize = 3;
+                    (plot.data || []).forEach(trace => {
+                        const config = trace.meta?.spinal_tap_filter;
+                        if (!config) return;
+                        const offsets = config.offsets || [];
+                        const traceKeys = config.keys || [];
+                        traceKeys.forEach((key, objectIndex) => {
+                            if (!wanted.has(key)) return;
+                            const start = offsets[objectIndex];
+                            const end = offsets[objectIndex + 1];
+                            for (let point = start; point < end; point++) {
+                                x.push(trace.x[point]);
+                                y.push(trace.y[point]);
+                                z.push(trace.z[point]);
+                            }
+                            if (Number.isFinite(Number(trace.marker?.size))) {
+                                baseSize = Math.max(
+                                    baseSize, Number(trace.marker.size)
+                                );
+                            }
+                        });
+                    });
+                    if (!x.length) return;
+                    overlays.push({
+                        type: 'scatter3d',
+                        mode: 'markers',
+                        name: label,
+                        x: x,
+                        y: y,
+                        z: z,
+                        hoverinfo: 'skip',
+                        showlegend: false,
+                        marker: {
+                            color: '#f47c13',
+                            opacity: opacity,
+                            size: baseSize + 2,
+                            symbol: 'circle-open'
+                        },
+                        meta: {spinal_tap_inspection_overlay: true}
+                    });
+                };
+                addOverlay(selection?.key ? [selection.key] : [], 1, 'Selected object');
+                addOverlay(matches, 0.78, 'Matched objects');
+                if (overlays.length) window.Plotly.addTraces(plot, overlays);
+            }
+            return selection?.key
+                ? {key: selection.key, matches: matches, revision: Date.now()}
+                : null;
+        }
+        """,
+        Output("store-inspection-highlights", "data"),
+        Input("store-inspected-object", "data"),
+        State("store-object-match-links", "data"),
+        prevent_initial_call=True,
+    )
+
+    @app.callback(
+        Output("object-inspector-title", "children"),
+        Output("object-inspector-match-summary", "children"),
+        Output("object-inspector-content", "children"),
+        Output("object-inspector", "hidden"),
+        Input("store-inspected-object", "data"),
+        State("store-loaded-event", "data"),
+        State("radio-run-mode", "value"),
+        State("radio-object-mode", "value"),
+        State("store-object-match-links", "data"),
+        State("dropdown-reco-filter", "options"),
+        State("dropdown-truth-filter", "options"),
+        prevent_initial_call=True,
+    )
+    def update_object_inspector(
+        selection,
+        loaded_event,
+        mode,
+        family,
+        links=None,
+        reco_options=None,
+        truth_options=None,
+    ):
+        """Build the object-inspection panel for a renderer selection."""
+        if not selection or not loaded_event:
+            return "", "", [], True
+
+        prefix = selection.get("prefix")
+        position = selection.get("position")
+        selected_family = selection.get("family", family)
+        valid_prefix = prefix in {"reco", "truth"}
+        visible_prefix = mode == "both" or mode == prefix
+        if (
+            not valid_prefix
+            or not visible_prefix
+            or selected_family != family
+            or not isinstance(position, int)
+        ):
+            return "", "", [], True
+
+        try:
+            reader = initialize_reader(
+                loaded_event["file_path"], loaded_event.get("use_run", False)
+            )
+            data, *_ = load_data(reader, loaded_event["entry"], mode, family)
+            collection = data[object_collection_key(prefix, family)]
+            if position < 0 or position >= len(collection):
+                return "", "", [], True
+            summary = inspect_object(collection[position], prefix, family, position)
+        except (KeyError, OSError, TypeError, ValueError):
+            return "", "", [], True
+
+        match_prefix = "Truth" if prefix == "reco" else "Reco"
+        if links is not None:
+            match_keys = links.get(selection["key"], [])
+            options = truth_options if prefix == "reco" else reco_options
+            labels = {
+                option["value"]: option["label"].split(" ·", 1)[0]
+                for option in (options or [])
+            }
+            matches = [labels.get(key, key) for key in match_keys]
+        else:
+            matches = [
+                f"{match_prefix} {family[:-1].capitalize()} {int(match)}"
+                for match in getattr(collection[position], "match_ids", [])
+            ]
+        if matches:
+            if mode == "both":
+                side = "right" if prefix == "reco" else "left"
+                match_summary = f"Matches on the {side}: " + ", ".join(matches)
+            else:
+                match_summary = f"Matched {match_prefix.lower()}: " + ", ".join(matches)
+        else:
+            match_summary = f"No matched {match_prefix.lower()} {family}"
+
+        group_labels = {
+            "overview": "Overview",
+            "identifiers": "Identifiers & references",
+            "geometry": "Geometry",
+            "energy": "Energy & kinematics",
+            "lineage": "Truth lineage",
+            "timing": "Timing",
+            "detector_matching": "Detector matching",
+            "interaction_physics": "Interaction physics",
+            "matching": "Object matching",
+            "details": "Additional attributes",
+        }
+        sections = []
+        for group, rows in summary["groups"].items():
+            entries = []
+            for row in rows:
+                entries.extend(
+                    [
+                        html.Dt(row["label"]),
+                        html.Dd(row["value"]),
+                    ]
+                )
+            sections.append(
+                html.Section(
+                    [
+                        html.H4(
+                            group_labels[group],
+                            className="object-inspector-group-title",
+                        ),
+                        html.Dl(entries, className="object-inspector-grid"),
+                    ],
+                    className="object-inspector-group",
+                )
+            )
+
+        return summary["title"], match_summary, sections, False
 
     app.clientside_callback(
         r"""
@@ -2222,18 +2578,27 @@ def register_callbacks(app):
 
     app.clientside_callback(
         """
+        function(bootstrap) {
+            if (!bootstrap) return [];
+            return window.spinalTapTheme?.initializeToggle?.() || [];
+        }
+        """,
+        Output("theme-toggle", "value"),
+        Input("store-theme-bootstrap", "data"),
+    )
+
+    app.clientside_callback(
+        """
         function(theme) {
+            const dark = (theme || []).includes('dark');
+            window.spinalTapTheme?.select?.(dark ? 'dark' : 'light');
             setTimeout(function() {
                 const viewer = document.querySelector('.webgl-viewer');
                 if (viewer) {
-                    viewer.dataset.dark = String(
-                        (theme || []).includes('dark')
-                    );
+                    viewer.dataset.dark = String(dark);
                 }
                 if (viewer && viewer._spinalTapViewer) {
-                    viewer._spinalTapViewer.setDark(
-                        (theme || []).includes('dark')
-                    );
+                    viewer._spinalTapViewer.setDark(dark);
                     return;
                 }
 
@@ -2243,7 +2608,6 @@ def register_callbacks(app):
                 const plotlyDiv = graphDiv.querySelector('.js-plotly-plot');
                 if (!plotlyDiv || !plotlyDiv.layout) return;
 
-                const dark = (theme || []).includes('dark');
                 const background = dark ? 'black' : 'white';
                 const foreground = dark ? '#f2f5fa' : '#2a3f5f';
                 const grid = dark ? '#506784' : 'lightgray';
@@ -3138,6 +3502,12 @@ def register_callbacks(app):
                     figure, colorscale or "Inferno", continuous_layers
                 )
                 apply_plotly_appearance(figure, continuous_layers, appearance)
+                attach_object_filter_metadata(
+                    figure,
+                    scene,
+                    revision=uuid.uuid4().hex,
+                    selection=active_filter,
+                )
                 figure.update_layout(
                     width=None,
                     height=None,

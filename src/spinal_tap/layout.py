@@ -40,61 +40,111 @@ def section(title, children, class_name="control-section", actions=None):
 
 def login_form():
     """Generate login form for experiment selection and authentication."""
+    spine_version = getattr(spine, "__version__", "unknown")
+
     return html.Div(
         [
             dcc.Store(id="login-submit-trigger", data=None),
-            app_header(),
             html.Main(
                 html.Div(
                     [
-                        html.H2("Authentication Required", className="login-title"),
-                        html.P(
-                            "Select an experiment and enter the shared password.",
-                            className="login-copy",
+                        html.Div(
+                            [
+                                html.Img(
+                                    src=SPINAL_TAP_LOGO_BLACK,
+                                    alt="Spinal Tap",
+                                    className=(
+                                        "login-brand-logo login-brand-logo-light"
+                                    ),
+                                ),
+                                html.Img(
+                                    src=SPINAL_TAP_LOGO_WHITE,
+                                    alt="Spinal Tap",
+                                    className=(
+                                        "login-brand-logo login-brand-logo-dark"
+                                    ),
+                                ),
+                            ],
+                            className="login-brand",
                         ),
                         html.Div(
                             [
-                                html.Label("Experiment", className="field-label"),
-                                dcc.Dropdown(
-                                    id="experiment-select",
-                                    options=[
-                                        {"label": "Public", "value": "public"},
-                                        {"label": "DUNE", "value": "dune"},
-                                        {"label": "ICARUS", "value": "icarus"},
-                                        {"label": "SBND", "value": "sbnd"},
+                                html.H2("Sign in", className="login-title"),
+                                html.P(
+                                    (
+                                        "Select an experiment and enter the "
+                                        "shared password."
+                                    ),
+                                    className="login-copy",
+                                ),
+                                html.Div(
+                                    [
+                                        html.Label(
+                                            "Experiment", className="field-label"
+                                        ),
+                                        dcc.Dropdown(
+                                            id="experiment-select",
+                                            options=[
+                                                {
+                                                    "label": "Public",
+                                                    "value": "public",
+                                                },
+                                                {
+                                                    "label": "DUNE",
+                                                    "value": "dune",
+                                                },
+                                                {
+                                                    "label": "ICARUS",
+                                                    "value": "icarus",
+                                                },
+                                                {
+                                                    "label": "SBND",
+                                                    "value": "sbnd",
+                                                },
+                                            ],
+                                            placeholder="Select experiment",
+                                            className="control-dropdown",
+                                        ),
                                     ],
-                                    placeholder="Select experiment",
-                                    className="control-dropdown",
+                                    className="login-field",
+                                ),
+                                html.Div(
+                                    [
+                                        html.Label("Password", className="field-label"),
+                                        dcc.Input(
+                                            id="password-input",
+                                            type="password",
+                                            placeholder="Enter password",
+                                            className="text-input",
+                                        ),
+                                    ],
+                                    className="login-field",
+                                ),
+                                html.Div(id="login-error", className="login-error"),
+                                html.Button(
+                                    "Login",
+                                    id="login-button",
+                                    n_clicks=0,
+                                    className="primary-button full-width",
                                 ),
                             ],
-                            className="login-field",
+                            className="login-panel",
                         ),
                         html.Div(
                             [
-                                html.Label("Password", className="field-label"),
-                                dcc.Input(
-                                    id="password-input",
-                                    type="password",
-                                    placeholder="Enter password",
-                                    className="text-input",
-                                ),
+                                html.Span(f"Tap {__version__}"),
+                                html.Span("·", **{"aria-hidden": "true"}),
+                                html.Span(f"SPINE {spine_version}"),
                             ],
-                            className="login-field",
-                        ),
-                        html.Div(id="login-error", className="login-error"),
-                        html.Button(
-                            "Login",
-                            id="login-button",
-                            n_clicks=0,
-                            className="primary-button full-width",
+                            className="login-version",
                         ),
                     ],
-                    className="login-panel",
+                    className="login-stack",
                 ),
                 className="login-shell",
             ),
         ],
-        className="app-root",
+        className="app-root login-root",
     )
 
 
@@ -851,6 +901,61 @@ def div_graph_daq():
                         children=html.Div(className="viewer-empty"),
                         className="viewer-body",
                     ),
+                    html.Aside(
+                        [
+                            html.Div(
+                                [
+                                    html.Div(
+                                        [
+                                            html.Span(
+                                                "Selected object",
+                                                className="object-inspector-eyebrow",
+                                            ),
+                                            html.H3(
+                                                id="object-inspector-title",
+                                                className="object-inspector-title",
+                                            ),
+                                            html.Div(
+                                                id="object-inspector-match-summary",
+                                                className=(
+                                                    "object-inspector-match-summary"
+                                                ),
+                                            ),
+                                        ]
+                                    ),
+                                    html.Button(
+                                        "×",
+                                        id="button-close-inspector",
+                                        type="button",
+                                        title="Close object inspector (Esc)",
+                                        className="object-inspector-close",
+                                        **{"aria-label": "Close object inspector"},
+                                    ),
+                                ],
+                                className="object-inspector-header",
+                            ),
+                            html.Div(
+                                id="object-inspector-content",
+                                className="object-inspector-content",
+                            ),
+                            html.Div(
+                                [
+                                    html.Button(
+                                        "Show only",
+                                        id="button-isolate-object",
+                                        type="button",
+                                        title="Show only this object",
+                                        className="viewer-action-button",
+                                        **{"aria-pressed": "false"},
+                                    ),
+                                ],
+                                className="object-inspector-actions",
+                            ),
+                        ],
+                        id="object-inspector",
+                        className="object-inspector",
+                        hidden=True,
+                    ),
                     html.Div(
                         [
                             html.Div(
@@ -1130,11 +1235,15 @@ def main_layout():
                     dcc.Store(id="store-attribute-options"),
                     dcc.Store(id="store-camera-sync"),
                     dcc.Store(id="store-object-filter"),
+                    dcc.Store(id="store-inspected-object"),
+                    dcc.Store(id="store-inspection-action"),
+                    dcc.Store(id="store-inspection-highlights"),
                     dcc.Store(id="store-filter-render-request"),
                     dcc.Store(id="store-appearance-render-request"),
                     dcc.Store(id="store-object-match-links"),
                     dcc.Store(id="store-display-controls"),
                     dcc.Store(id="store-link-filters", data=False),
+                    dcc.Store(id="store-theme-bootstrap", data=True),
                     dcc.Store(id="store-theme"),
                     dcc.Store(id="store-color"),
                     dcc.Store(id="store-geometry-choice", data="auto"),

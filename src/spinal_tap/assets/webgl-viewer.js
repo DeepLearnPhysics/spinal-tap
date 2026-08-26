@@ -596,6 +596,14 @@
             this.hoverColorBuffer = this.gl.createBuffer();
             this.hoverHaloBuffer = this.gl.createBuffer();
             this.hoverCount = 0;
+            this.selectedPositionBuffer = this.gl.createBuffer();
+            this.selectedColorBuffer = this.gl.createBuffer();
+            this.selectedHaloBuffer = this.gl.createBuffer();
+            this.selectedCount = 0;
+            this.matchedPositionBuffer = this.gl.createBuffer();
+            this.matchedColorBuffer = this.gl.createBuffer();
+            this.matchedHaloBuffer = this.gl.createBuffer();
+            this.matchedCount = 0;
             this.initializeCamera();
             this.installEvents();
             this.resizeObserver = new ResizeObserver(() => this.draw());
@@ -1356,7 +1364,7 @@
             });
             this.canvas.addEventListener("pointerup", event => {
                 active = false;
-                if (moved < 3) this.queuePick(event);
+                if (moved < 3) this.pick(event, true);
             });
             this.canvas.addEventListener("pointermove", event => {
                 if (!active) {
@@ -1445,6 +1453,119 @@
             this.hoverObject = null;
             this.hoverCount = 0;
             this.hoverMarker.hidden = true;
+            this.draw(false);
+        }
+
+        clearInspection() {
+            this.selectedItem = null;
+            this.selectedObject = null;
+            this.selectedCount = 0;
+            this.matchedItem = null;
+            this.matchedCount = 0;
+            this.draw(false);
+        }
+
+        setInspectionMatches(selection, matches) {
+            this.matchedItem = null;
+            this.matchedCount = 0;
+            if (!selection?.family || !(matches || []).length) {
+                this.draw(false);
+                return;
+            }
+
+            const matchPrefix = selection.prefix === "reco" ? "truth" : "reco";
+            const targetName = `${matchPrefix}_${selection.family}`;
+            const matchIds = new Set((matches || []).map(key =>
+                Number(String(key).split(":", 2)[1])
+            ));
+            let matchedItem = null;
+            let matchedView = -1;
+            this.layers.some((layers, viewIndex) => layers.some(item => {
+                if (item.source.metadata.object_name !== targetName ||
+                        !item.activeSelectionIds) return false;
+                matchedItem = item;
+                matchedView = viewIndex;
+                return true;
+            }));
+            if (!matchedItem) {
+                this.draw(false);
+                return;
+            }
+
+            const vertices = [];
+            for (let index = 0;
+                 index < matchedItem.activeSelectionIds.length;
+                 index++) {
+                if (matchIds.has(matchedItem.activeSelectionIds[index])) {
+                    vertices.push(index);
+                }
+            }
+            const positions = new Float32Array(vertices.length * 3);
+            const colors = new Float32Array(vertices.length * 4);
+            const halo = new Float32Array(vertices.length * 4);
+            vertices.forEach((vertex, index) => {
+                positions.set(
+                    matchedItem.positions.subarray(vertex * 3, vertex * 3 + 3),
+                    index * 3
+                );
+                colors.set(
+                    matchedItem.colors.subarray(vertex * 4, vertex * 4 + 4),
+                    index * 4
+                );
+                halo.set([1.0, 0.49, 0.03, 0.78], index * 4);
+            });
+            const gl = this.gl;
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.matchedPositionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.matchedColorBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.matchedHaloBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, halo, gl.DYNAMIC_DRAW);
+            this.matchedItem = matchedItem;
+            this.matchedViewIndex = matchedView;
+            this.matchedCount = vertices.length;
+            this.draw(false);
+        }
+
+        setInspection(best, object) {
+            this.selectedItem = best.item;
+            this.selectedObject = object;
+            this.selectedViewIndex = best.viewIndex;
+
+            const vertices = [];
+            if (object != null && best.item.activeSelectionIds) {
+                for (let index = 0;
+                     index < best.item.activeSelectionIds.length;
+                     index++) {
+                    if (best.item.activeSelectionIds[index] === object) {
+                        vertices.push(index);
+                    }
+                }
+            } else {
+                vertices.push(best.vertex);
+            }
+            const positions = new Float32Array(vertices.length * 3);
+            const colors = new Float32Array(vertices.length * 4);
+            const halo = new Float32Array(vertices.length * 4);
+            vertices.forEach((vertex, index) => {
+                positions.set(
+                    best.item.positions.subarray(vertex * 3, vertex * 3 + 3),
+                    index * 3
+                );
+                colors.set(
+                    best.item.colors.subarray(vertex * 4, vertex * 4 + 4),
+                    index * 4
+                );
+                halo.set([1.0, 0.49, 0.03, 0.92], index * 4);
+            });
+            const gl = this.gl;
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.selectedPositionBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, positions, gl.DYNAMIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.selectedColorBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, colors, gl.DYNAMIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.selectedHaloBuffer);
+            gl.bufferData(gl.ARRAY_BUFFER, halo, gl.DYNAMIC_DRAW);
+            this.selectedCount = vertices.length;
             this.draw(false);
         }
 
@@ -1672,7 +1793,7 @@
             this.pickDirty = false;
         }
 
-        pick(event) {
+        pick(event, inspect = false) {
             if (!this.lastMatrices) return;
             if (this.pickDirty) this.renderPickBuffer();
             const gl = this.gl;
@@ -1714,6 +1835,12 @@
             if (!range) {
                 this.tooltip.hidden = true;
                 this.clearHover();
+                if (inspect) {
+                    this.clearInspection();
+                    window.dash_clientside?.set_props?.(
+                        "store-inspected-object", {data: null}
+                    );
+                }
                 return;
             }
             const best = {
@@ -1803,6 +1930,30 @@
                 coordinateText.split("\n"), detail.split("\n"), best,
                 event.clientX, event.clientY
             );
+            if (inspect) this.publishInspection(best, object);
+        }
+
+        publishInspection(best, object) {
+            const objectName = best.item.source.metadata.object_name || "";
+            const separator = objectName.indexOf("_");
+            const prefix = separator > 0 ? objectName.slice(0, separator) : "";
+            const family = separator > 0 ? objectName.slice(separator + 1) : "";
+            if (object == null || !["reco", "truth"].includes(prefix) ||
+                    !["fragments", "particles", "interactions"].includes(family)) {
+                return;
+            }
+            this.setInspection(best, object);
+            window.dash_clientside?.set_props?.("store-inspected-object", {
+                data: {
+                    key: `${prefix}:${object}`,
+                    prefix: prefix,
+                    position: Number(object),
+                    family: family,
+                    renderer: "webgl",
+                    view: best.viewIndex,
+                    revision: Date.now()
+                }
+            });
         }
 
         showHoverMessage(coordinates, details, best, x, y) {
@@ -2035,6 +2186,47 @@
             gl.depthFunc(gl.LESS);
         }
 
+        drawInspection(viewIndex, mvp) {
+            this.drawInspectionBuffer(
+                viewIndex, mvp, this.selectedViewIndex, this.selectedItem,
+                this.selectedCount, this.selectedPositionBuffer,
+                this.selectedColorBuffer, this.selectedHaloBuffer, 2.5
+            );
+            this.drawInspectionBuffer(
+                viewIndex, mvp, this.matchedViewIndex, this.matchedItem,
+                this.matchedCount, this.matchedPositionBuffer,
+                this.matchedColorBuffer, this.matchedHaloBuffer, 2.0
+            );
+        }
+
+        drawInspectionBuffer(viewIndex, mvp, targetView, item, count,
+                             positionBuffer, colorBuffer, haloBuffer,
+                             haloSize) {
+            if (!count || targetView !== viewIndex) return;
+            const gl = this.gl;
+            const pixelRatio = window.devicePixelRatio || 1;
+            const pointSize = this.pointSize(item);
+            gl.uniformMatrix4fv(this.mvpLocation, false, mvp);
+            if (this.supportsMarkerSymbols) gl.uniform1i(this.symbolLocation, 1);
+            gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+            gl.enableVertexAttribArray(this.positionLocation);
+            gl.vertexAttribPointer(this.positionLocation, 3, gl.FLOAT, false, 0, 0);
+            gl.depthFunc(gl.LEQUAL);
+
+            // Keep the object's original colors readable inside a persistent
+            // SPINE-orange outline. Hover remains a separate, subtler layer.
+            gl.bindBuffer(gl.ARRAY_BUFFER, haloBuffer);
+            gl.enableVertexAttribArray(this.colorLocation);
+            gl.vertexAttribPointer(this.colorLocation, 4, gl.FLOAT, false, 0, 0);
+            gl.uniform1f(this.pointSizeLocation, (pointSize + haloSize) * pixelRatio);
+            gl.drawArrays(gl.POINTS, 0, count);
+            gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+            gl.vertexAttribPointer(this.colorLocation, 4, gl.FLOAT, false, 0, 0);
+            gl.uniform1f(this.pointSizeLocation, (pointSize + 0.5) * pixelRatio);
+            gl.drawArrays(gl.POINTS, 0, count);
+            gl.depthFunc(gl.LESS);
+        }
+
         pointSize(item) {
             const scale = item.source.type === "point"
                 ? (this.appearance.point_size || 1) : 1;
@@ -2085,6 +2277,7 @@
                 const mvp = multiply(projection, view);
                 this.lastMatrices.push(mvp);
                 layers.forEach(layer => this.drawLayer(layer, mvp));
+                this.drawInspection(index, mvp);
                 this.drawHover(index, mvp);
             });
             gl.disable(gl.SCISSOR_TEST);
@@ -2097,6 +2290,12 @@
             this.gl.deleteBuffer(this.hoverPositionBuffer);
             this.gl.deleteBuffer(this.hoverColorBuffer);
             this.gl.deleteBuffer(this.hoverHaloBuffer);
+            this.gl.deleteBuffer(this.selectedPositionBuffer);
+            this.gl.deleteBuffer(this.selectedColorBuffer);
+            this.gl.deleteBuffer(this.selectedHaloBuffer);
+            this.gl.deleteBuffer(this.matchedPositionBuffer);
+            this.gl.deleteBuffer(this.matchedColorBuffer);
+            this.gl.deleteBuffer(this.matchedHaloBuffer);
             this.layers.flat().forEach(item => {
                 if (item.pickColorBuffer) this.gl.deleteBuffer(item.pickColorBuffer);
             });

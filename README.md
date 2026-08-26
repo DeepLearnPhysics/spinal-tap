@@ -1,5 +1,7 @@
 # Spinal Tap
 
+[![CI](https://github.com/DeepLearnPhysics/spinal-tap/actions/workflows/ci.yml/badge.svg)](https://github.com/DeepLearnPhysics/spinal-tap/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/DeepLearnPhysics/spinal-tap/branch/main/graph/badge.svg)](https://codecov.io/gh/DeepLearnPhysics/spinal-tap)
 [![PyPI version](https://badge.fury.io/py/spinal-tap.svg)](https://badge.fury.io/py/spinal-tap)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/downloads/)
 
@@ -140,6 +142,8 @@ docker run -p 8888:8888 ghcr.io/deeplearnphysics/spinal-tap:latest
 
 - Code style is enforced with black, isort, and flake8 (pre-commit and CI).
 - The GitHub Actions workflow builds and tests on every commit, PR, tag, and release.
+- The complete test suite enforces 100% statement coverage and publishes its
+  report to [Codecov](https://codecov.io/gh/DeepLearnPhysics/spinal-tap).
 - Docker images are built automatically on version tag pushes (e.g., `v0.1.2`).
 - Publishing:
   - On tag push: publishes to Test PyPI (requires `TEST_PYPI_API_TOKEN` secret).

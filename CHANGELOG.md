@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Changed
 - Replace per-object Plotly trace splitting with a searchable object-selection
   filter while retaining one combined point-cloud trace
-- Update the minimum `spine` dependency to v1.0.0
+- Update the minimum `spine` dependency to v1.0.1
 - Reuse file-aware HDF5 readers and built events across presentation updates
 - Use a compact binary renderer-neutral scene transport and a dedicated WebGL 2
   viewer by default, with Plotly retained as a selectable fallback
@@ -49,6 +49,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   scale and transform, color-domain limits, scalar visibility ranges, and a
   live, draggable value histogram without increasing the sidebar's resting
   height
+- Add renderer-independent click inspection with grouped object attributes,
+  direct reconstruction/truth match highlighting, and reversible matched
+  object isolation
+- Add PNG branding, WebGL GIF rotation, Plotly HTML export, keyboard shortcuts,
+  and a searchable in-application shortcut reference
+- Add detector-aware truth point sources, axis visibility, adaptive light/dark
+  themes, and a dedicated authenticated landing page
+- Enforce complete statement coverage in CI and publish reports to Codecov
 
 ### Fixed
 - Accept both `/data/...` and `/sdf/data/neutrino/...` paths for S3DF data

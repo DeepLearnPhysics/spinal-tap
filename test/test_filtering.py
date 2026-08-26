@@ -142,15 +142,24 @@ def test_attach_object_filter_metadata():
             )
         ]
     )
+    figure.update_layout(meta={"appearance_histogram": {"values": [1, 2]}})
 
-    attach_object_filter_metadata(figure, scene, revision=42, selection=["reco:0"])
+    attach_object_filter_metadata(
+        figure, scene, revision="render-42", selection=["reco:4", "reco:9"]
+    )
 
     assert figure.layout.meta == {
-        "spinal_tap_filter_revision": 42,
-        "spinal_tap_filter_selection": ["reco:0"],
+        "appearance_histogram": {"values": [1, 2]},
+        "spinal_tap_filter_revision": "render-42",
+        "spinal_tap_filter_selection": ["reco:4", "reco:9"],
     }
     assert figure.data[0].meta == {
-        "spinal_tap_filter": {"prefix": "reco", "offsets": [0, 2, 5]}
+        "spinal_tap_filter": {
+            "prefix": "reco",
+            "family": "particles",
+            "offsets": [0, 2, 5],
+            "keys": ["reco:4", "reco:9"],
+        }
     }
 
 
@@ -177,3 +186,26 @@ def test_attach_filter_metadata_skips_irrelevant_layers_and_checks_traces():
     scene = SimpleNamespace(views=[SimpleNamespace(layers=[nonempty])])
     with pytest.raises(RuntimeError, match="Expected one combined"):
         attach_object_filter_metadata(go.Figure(), scene, revision=2)
+
+
+def test_attach_filter_metadata_falls_back_to_contiguous_keys():
+    """Incomplete selections should not corrupt the trace-to-object mapping."""
+    layer = SimpleNamespace(
+        name="Reco particles",
+        point_count=2,
+        object_offsets=np.asarray([0, 1, 2]),
+        metadata={"object_name": "reco_particles"},
+    )
+    figure = go.Figure(go.Scatter3d(name=layer.name, x=[0, 1], y=[0, 1], z=[0, 1]))
+
+    attach_object_filter_metadata(
+        figure,
+        SimpleNamespace(views=[SimpleNamespace(layers=[layer])]),
+        revision=1,
+        selection=["reco:8"],
+    )
+
+    assert figure.data[0].meta["spinal_tap_filter"]["keys"] == [
+        "reco:0",
+        "reco:1",
+    ]

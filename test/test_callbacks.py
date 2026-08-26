@@ -75,6 +75,106 @@ def test_camera_sync_owns_graph_mount_updates():
     ]
 
 
+def test_object_inspector_uses_cached_event_data(callback_app, monkeypatch):
+    """The inspector should summarize the selected cached output object."""
+    callback = registered_callback(callback_app, "update_object_inspector")
+    obj = SimpleNamespace(
+        id=17,
+        shape=1,
+        depositions_sum=12.5,
+        is_matched=True,
+        match_ids=[9, 12],
+        enum_values={"shape": {1: "track"}},
+        field_units={"depositions_sum": "MeV"},
+    )
+    obj.as_dict = lambda: {
+        "id": obj.id,
+        "shape": obj.shape,
+        "depositions_sum": obj.depositions_sum,
+        "is_matched": obj.is_matched,
+    }
+    monkeypatch.setattr(callback_module, "initialize_reader", lambda *args: object())
+    monkeypatch.setattr(
+        callback_module,
+        "load_data",
+        lambda *args: ({"reco_particles": [obj]}, None, None),
+    )
+
+    title, match_summary, content, hidden = callback(
+        {"prefix": "reco", "position": 0, "family": "particles"},
+        {"file_path": "/tmp/event.h5", "entry": 3},
+        "reco",
+        "particles",
+    )
+
+    assert title == "Reco Particle 17"
+    assert match_summary == "Matched truth: Truth Particle 9, Truth Particle 12"
+    assert not hidden
+    assert [section.children[0].children for section in content] == [
+        "Overview",
+        "Identifiers & references",
+        "Energy & kinematics",
+        "Object matching",
+    ]
+
+    _, match_summary, _, _ = callback(
+        {"key": "reco:0", "prefix": "reco", "position": 0, "family": "particles"},
+        {"file_path": "/tmp/event.h5", "entry": 3},
+        "both",
+        "particles",
+        {"reco:0": ["truth:2"]},
+        [],
+        [{"value": "truth:2", "label": "Truth Particle 12 · 4 pts"}],
+    )
+    assert match_summary == "Matches on the right: Truth Particle 12"
+
+    _, match_summary, _, _ = callback(
+        {"key": "reco:0", "prefix": "reco", "position": 0, "family": "particles"},
+        {"file_path": "/tmp/event.h5", "entry": 3},
+        "both",
+        "particles",
+        {},
+        [],
+        [],
+    )
+    assert match_summary == "No matched truth particles"
+
+
+def test_object_inspector_rejects_stale_selection(callback_app):
+    """Selections outside the current mode or family should close the panel."""
+    callback = registered_callback(callback_app, "update_object_inspector")
+    selection = {"prefix": "truth", "position": 0, "family": "fragments"}
+
+    assert callback(
+        selection,
+        {"file_path": "/tmp/event.h5", "entry": 3},
+        "reco",
+        "particles",
+    ) == ("", "", [], True)
+    assert callback(None, None, "reco", "particles") == ("", "", [], True)
+
+
+def test_object_inspector_handles_missing_cached_object(callback_app, monkeypatch):
+    """Stale positions and unavailable cached products should close cleanly."""
+    callback = registered_callback(callback_app, "update_object_inspector")
+    selection = {"prefix": "reco", "position": 4, "family": "particles"}
+    loaded = {"file_path": "/tmp/event.h5", "entry": 3}
+    monkeypatch.setattr(callback_module, "initialize_reader", lambda *args: object())
+    monkeypatch.setattr(
+        callback_module,
+        "load_data",
+        lambda *args: ({"reco_particles": []}, None, None),
+    )
+    assert callback(selection, loaded, "reco", "particles") == ("", "", [], True)
+
+    monkeypatch.setattr(
+        callback_module,
+        "load_data",
+        lambda *args: (_ for _ in ()).throw(OSError("cache unavailable")),
+    )
+    assert callback(selection, loaded, "reco", "particles") == ("", "", [], True)
+
+
 def test_entry_label_reports_zero_based_index_range():
     """The entry chip should show the current and maximum valid indexes."""
     assert format_entry_label(0, 100) == "Entry 0/99"
@@ -384,6 +484,76 @@ def test_plotly_appearance_preserves_automatic_source_domain():
 
     assert figure.data[0].marker.cmin == 0.0
     assert figure.data[0].marker.cmax == 2.0
+
+
+def test_plotly_appearance_handles_auxiliary_and_unusual_traces():
+    """Appearance styling should skip auxiliaries and nonnumeric colors cleanly."""
+    figure = go.Figure(
+        data=[
+            go.Scatter3d(name="Lines", mode="lines", x=[0, 1], y=[0, 1], z=[0, 1]),
+            go.Scatter3d(
+                name="Particles",
+                mode="markers",
+                x=[0],
+                y=[0],
+                z=[0],
+                marker={"color": [1]},
+                meta={"kind": "vertex"},
+            ),
+            go.Scatter3d(
+                name="Particles",
+                mode="markers",
+                x=[0, 1],
+                y=[0, 1],
+                z=[0, 1],
+                marker={"color": ["red", "blue"]},
+            ),
+        ]
+    )
+
+    apply_plotly_appearance(
+        figure,
+        {"Particles"},
+        {"point_size": 2.0, "opacity": 0.5},
+    )
+
+    assert figure.data[0].mode == "lines"
+    assert figure.data[1].marker.size is None
+    assert figure.data[2].marker.size == 4
+    assert list(figure.data[2].marker.color) == ["red", "blue"]
+    assert figure.layout.meta["appearance_histogram"]["bins"] == []
+
+
+def test_plotly_appearance_automatic_log_domain_and_constant_histogram():
+    """Automatic log bounds should honor sources and constant distributions."""
+    figure = go.Figure(
+        data=[
+            go.Scatter3d(
+                name="Particles",
+                mode="markers",
+                x=[0, 1],
+                y=[0, 1],
+                z=[0, 1],
+                marker={"color": [10, 10], "cmin": 1},
+            )
+        ]
+    )
+
+    apply_plotly_appearance(
+        figure,
+        {"Particles"},
+        {
+            "transform": "log",
+            "domain_mode": "auto",
+            "range_mode": "all",
+        },
+    )
+
+    assert figure.data[0].marker.cmin == 0
+    assert figure.data[0].marker.cmax == 1
+    histogram = figure.layout.meta["appearance_histogram"]
+    assert histogram["count"] == 2
+    assert histogram["min"] == histogram["max"] == 1
 
 
 def test_truth_point_sources_limit_pointwise_attributes():
@@ -794,6 +964,29 @@ def test_view_state_rejects_additional_invalid_types(state, message):
         validate_view_state(state)
 
 
+@pytest.mark.parametrize(
+    "appearance,message",
+    [
+        ([], "appearance settings"),
+        ({"domain_mode": "fixed"}, "color domain"),
+        ({"range_mode": "window"}, "visible range"),
+        ({"point_size": "large"}, "point_size"),
+        ({"point_size": 0.25}, "point_size"),
+        ({"opacity": 0.0}, "opacity"),
+    ],
+)
+def test_view_state_rejects_invalid_appearance(appearance, message):
+    """Imported point styling should enforce its complete schema and bounds."""
+    state = {
+        "version": 1,
+        "file": "/a.h5",
+        "entry": 0,
+        "attributes": {"appearance": appearance},
+    }
+    with pytest.raises(ValueError, match=message):
+        validate_view_state(state)
+
+
 def test_load_view_state_reports_text_and_json_errors(tmp_path):
     """Imported view decoding failures should include actionable context."""
     invalid_utf8 = tmp_path / "binary.json"
@@ -1129,7 +1322,7 @@ class FakeDrawer:
         if self.fail:
             raise ValueError("cannot draw")
         self.calls.append(("scene", args, kwargs))
-        return SimpleNamespace(metadata={"up_dir": [0.0, 1.0, 0.0]})
+        return SimpleNamespace(metadata={"up_dir": [0.0, 1.0, 0.0]}, views=[])
 
     def get(self, *args, **kwargs):
         self.calls.append(("plotly", args, kwargs))
@@ -1323,6 +1516,26 @@ def test_shared_link_pending_state_opens_its_scene(graph_callback, monkeypatch):
     assert appearance["point_size"] == 1.5
     assert appearance["opacity"] == 0.75
     assert result[0].to_plotly_json()["props"]["data-show-axes"] == "false"
+
+    assert graph_callback(**graph_arguments(share_pending=None)) == (no_update,) * 17
+
+
+def test_shared_link_rejects_nested_view_source(graph_callback, monkeypatch):
+    """A share URL must resolve directly to data rather than another view."""
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="store-share-pending")
+    )
+    monkeypatch.setattr(callback_module, "classify_source", lambda path: ("json", path))
+    shared = {
+        "version": 1,
+        "file": "/tmp/nested-view.json",
+        "entry": 0,
+    }
+
+    result = graph_callback(**graph_arguments(share_pending=shared))
+
+    assert result[7] == "log-panel has-error"
+    assert "cannot reference another shared view" in result[5]
 
 
 def test_graph_callback_adds_raw_deposition_to_webgl_hover(graph_callback, monkeypatch):

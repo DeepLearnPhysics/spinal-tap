@@ -28,7 +28,7 @@
   --Dash-Shading-Weak: rgba(0, 0, 0, 0.08);
 }
 
-body:has(#theme-toggle input:checked) {
+html[data-spinal-tap-theme="dark"] body {
   --bg: #111214;
   --panel: #191b1e;
   --panel-subtle: #202327;
@@ -78,8 +78,8 @@ textarea {
   color-scheme: light;
 }
 
-body:has(#theme-toggle input:checked) input,
-body:has(#theme-toggle input:checked) textarea {
+html[data-spinal-tap-theme="dark"] body input,
+html[data-spinal-tap-theme="dark"] body textarea {
   color-scheme: dark;
 }
 
@@ -120,11 +120,11 @@ body:has(#theme-toggle input:checked) textarea {
   display: none;
 }
 
-body:has(#theme-toggle input:checked) .brand-logo-light {
+html[data-spinal-tap-theme="dark"] body .brand-logo-light {
   display: none;
 }
 
-body:has(#theme-toggle input:checked) .brand-logo-dark {
+html[data-spinal-tap-theme="dark"] body .brand-logo-dark {
   display: block;
 }
 
@@ -318,12 +318,12 @@ body:has(#theme-toggle input:checked) .brand-logo-dark {
   content: "Dark";
 }
 
-body:has(#theme-toggle input:checked) .theme-toggle-label::before {
+html[data-spinal-tap-theme="dark"] body .theme-toggle-label::before {
   content: "Dark";
   transform: translateX(100%);
 }
 
-body:has(#theme-toggle input:checked) .theme-toggle-label::after {
+html[data-spinal-tap-theme="dark"] body .theme-toggle-label::after {
   content: "Light";
   left: 0;
   right: auto;
@@ -578,35 +578,35 @@ textarea:focus,
   accent-color: var(--spine-orange);
 }
 
-body:has(#theme-toggle input:checked) .dash-dropdown,
-body:has(#theme-toggle input:checked) .dash-dropdown-content,
-body:has(#theme-toggle input:checked) .dash-dropdown-search-container,
-body:has(#theme-toggle input:checked) .dash-dropdown-option {
+html[data-spinal-tap-theme="dark"] body .dash-dropdown,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-content,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-search-container,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-option {
   background: var(--control) !important;
   color: var(--ink) !important;
   border-color: var(--line) !important;
 }
 
-body:has(#theme-toggle input:checked) .dash-dropdown-option:hover,
-body:has(#theme-toggle input:checked) .dash-dropdown-option:focus-within {
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-option:hover,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-option:focus-within {
   background: rgba(244, 124, 19, 0.18) !important;
 }
 
-body:has(#theme-toggle input:checked) .dash-dropdown-value,
-body:has(#theme-toggle input:checked) .dash-dropdown-value *,
-body:has(#theme-toggle input:checked) .dash-dropdown-value-count,
-body:has(#theme-toggle input:checked) .dash-dropdown-trigger-icon,
-body:has(#theme-toggle input:checked) .dash-dropdown-clear,
-body:has(#theme-toggle input:checked) .dash-dropdown-action-button,
-body:has(#theme-toggle input:checked) .dash-dropdown-option,
-body:has(#theme-toggle input:checked) .dash-dropdown-option *,
-body:has(#theme-toggle input:checked) .dash-dropdown-search {
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-value,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-value *,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-value-count,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-trigger-icon,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-clear,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-action-button,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-option,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-option *,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-search {
   color: var(--ink) !important;
   fill: var(--ink) !important;
 }
 
-body:has(#theme-toggle input:checked) .dash-dropdown-placeholder,
-body:has(#theme-toggle input:checked) .dash-dropdown-action-button {
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-placeholder,
+html[data-spinal-tap-theme="dark"] body .dash-dropdown-action-button {
   color: var(--muted) !important;
 }
 
@@ -684,32 +684,32 @@ body:has(#theme-toggle input:checked) .dash-dropdown-action-button {
   color: #ffffff;
 }
 
-body:has(#theme-toggle input:checked) .Select-control,
-body:has(#theme-toggle input:checked) .Select-menu-outer,
-body:has(#theme-toggle input:checked) .Select-menu,
-body:has(#theme-toggle input:checked) .Select-option,
-body:has(#theme-toggle input:checked) .VirtualizedSelectOption,
-body:has(#theme-toggle input:checked) .VirtualizedSelectFocusedOption,
-body:has(#theme-toggle input:checked) .Select-input,
-body:has(#theme-toggle input:checked) .Select-input > input {
+html[data-spinal-tap-theme="dark"] body .Select-control,
+html[data-spinal-tap-theme="dark"] body .Select-menu-outer,
+html[data-spinal-tap-theme="dark"] body .Select-menu,
+html[data-spinal-tap-theme="dark"] body .Select-option,
+html[data-spinal-tap-theme="dark"] body .VirtualizedSelectOption,
+html[data-spinal-tap-theme="dark"] body .VirtualizedSelectFocusedOption,
+html[data-spinal-tap-theme="dark"] body .Select-input,
+html[data-spinal-tap-theme="dark"] body .Select-input > input {
   background: var(--control) !important;
   color: var(--ink) !important;
 }
 
-body:has(#theme-toggle input:checked) .Select-option.is-focused,
-body:has(#theme-toggle input:checked) .VirtualizedSelectFocusedOption {
+html[data-spinal-tap-theme="dark"] body .Select-option.is-focused,
+html[data-spinal-tap-theme="dark"] body .VirtualizedSelectFocusedOption {
   background: rgba(244, 124, 19, 0.18) !important;
 }
 
-body:has(#theme-toggle input:checked) .Select-option.is-selected {
+html[data-spinal-tap-theme="dark"] body .Select-option.is-selected {
   background: var(--spine-orange) !important;
   color: #ffffff !important;
 }
 
-body:has(#theme-toggle input:checked) .Select-menu-outer *,
-body:has(#theme-toggle input:checked) .VirtualizedSelectOption *,
-body:has(#theme-toggle input:checked) .VirtualizedSelectFocusedOption *,
-body:has(#theme-toggle input:checked) .Select-control * {
+html[data-spinal-tap-theme="dark"] body .Select-menu-outer *,
+html[data-spinal-tap-theme="dark"] body .VirtualizedSelectOption *,
+html[data-spinal-tap-theme="dark"] body .VirtualizedSelectFocusedOption *,
+html[data-spinal-tap-theme="dark"] body .Select-control * {
   color: inherit !important;
 }
 
@@ -1040,9 +1040,9 @@ body:has(#theme-toggle input:checked) .Select-control * {
 }
 
 /* Dash's number input adds native increment buttons around the text field. */
-body:has(#theme-toggle input:checked) .appearance-range-inputs button,
-body:has(#theme-toggle input:checked) .appearance-range-inputs [role="button"],
-body:has(#theme-toggle input:checked) .appearance-range-inputs b {
+html[data-spinal-tap-theme="dark"] body .appearance-range-inputs button,
+html[data-spinal-tap-theme="dark"] body .appearance-range-inputs [role="button"],
+html[data-spinal-tap-theme="dark"] body .appearance-range-inputs b {
   border-color: var(--line) !important;
   background: var(--control-muted) !important;
   color: var(--ink) !important;
@@ -1925,6 +1925,145 @@ body.scene-loading .log-alert-icon::after {
   overflow: hidden;
 }
 
+.object-inspector {
+  position: absolute;
+  top: 68px;
+  right: 12px;
+  bottom: 60px;
+  z-index: 35;
+  width: min(340px, calc(100% - 24px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel) 96%, transparent);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.object-inspector[hidden] {
+  display: none;
+}
+
+.object-inspector-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.object-inspector-eyebrow {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--spine-orange);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.object-inspector-title {
+  margin: 0;
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 850;
+  line-height: 1.2;
+}
+
+.object-inspector-match-summary {
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.object-inspector-close {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 5px;
+  padding: 0 0 2px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.object-inspector-close:hover,
+.object-inspector-close:focus-visible {
+  background: var(--control-muted);
+  color: var(--ink);
+  outline: 0;
+}
+
+.object-inspector-content {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 4px 14px 12px;
+}
+
+.object-inspector-group {
+  padding: 11px 0 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.object-inspector-group:last-child {
+  border-bottom: 0;
+}
+
+.object-inspector-group-title {
+  margin: 0 0 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.object-inspector-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 5px 12px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.object-inspector-grid dt {
+  min-width: 0;
+  color: var(--muted);
+}
+
+.object-inspector-grid dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-weight: 700;
+  text-align: right;
+}
+
+.object-inspector-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.object-inspector-actions .viewer-action-button.is-active {
+  border-color: var(--spine-orange);
+  background: rgba(244, 124, 19, 0.14);
+  color: var(--spine-orange-dark);
+}
+
 .webgl-viewer {
   position: relative;
   width: 100%;
@@ -2582,12 +2721,35 @@ body.scene-loading .viewer-body::after {
   flex: 1;
   display: grid;
   place-items: center;
-  padding: 28px 16px;
+  padding: 36px 16px;
+}
+
+.login-stack {
+  width: min(400px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.login-brand {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+
+.login-brand-logo {
+  width: min(280px, 82vw);
+  height: auto;
+  object-fit: contain;
+}
+
+.login-brand-logo-dark {
+  display: none;
 }
 
 .login-panel {
-  width: min(420px, 100%);
-  padding: 20px;
+  width: 100%;
+  padding: 22px;
 }
 
 .login-title {
@@ -2611,6 +2773,24 @@ body.scene-loading .viewer-body::after {
   font-size: 13px;
   font-weight: 800;
   text-align: left;
+}
+
+.login-version {
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 13px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+html[data-spinal-tap-theme="dark"] .login-brand-logo-light {
+  display: none;
+}
+
+html[data-spinal-tap-theme="dark"] .login-brand-logo-dark {
+  display: block;
 }
 
 @media (max-width: 1260px) {

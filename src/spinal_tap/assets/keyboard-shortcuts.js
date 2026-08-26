@@ -9,6 +9,10 @@
             selector: '#checklist-show-axes input[value="axes"]',
             label: "Toggle axes"
         }],
+        ["escape", {
+            selector: "#object-inspector:not([hidden]) #button-close-inspector",
+            label: "Close object inspector"
+        }],
         ["s", {selector: "#button-save-png", label: "Save PNG"}],
         ["e", {selector: "#button-export-view", label: "Export view JSON"}],
         ["?", {selector: "#help-menu > summary", label: "Open / close help"}]
