@@ -1,4 +1,6 @@
-# Spinal Tap
+<h1 align="center">
+<img src="https://raw.githubusercontent.com/DeepLearnPhysics/spinal-tap/main/src/spinal_tap/assets/spinal-tap-logo-black.png" alt="Spinal Tap" width="400">
+</h1><br>
 
 [![CI](https://github.com/DeepLearnPhysics/spinal-tap/actions/workflows/ci.yml/badge.svg)](https://github.com/DeepLearnPhysics/spinal-tap/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/DeepLearnPhysics/spinal-tap/branch/main/graph/badge.svg)](https://codecov.io/gh/DeepLearnPhysics/spinal-tap)
