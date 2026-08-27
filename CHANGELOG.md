@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-08-27
+
+### Added
+- **Package metadata**: Distribute the SPINE MIT license and publish project links, supported Python versions, scientific classifiers, and visualization-focused keywords to PyPI.
+- **Help resources**: Link the in-app help panel to the documentation, GitHub repository, and issue-template chooser.
+
 ## [1.0.2] - 2026-08-26
 
 ### Changed
