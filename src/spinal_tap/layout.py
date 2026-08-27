@@ -1180,15 +1180,48 @@ def app_header(experiment=None, show_help=False):
                                             ],
                                             className="help-shortcut-row",
                                         ),
-                                        html.A(
-                                            "Read the documentation",
-                                            href=(
-                                                "https://spinal-tap.readthedocs.io/"
-                                                "stable/"
-                                            ),
-                                            target="_blank",
-                                            rel="noopener noreferrer",
-                                            className="help-documentation-link",
+                                        html.Div(
+                                            [
+                                                html.Span(
+                                                    "Resources",
+                                                    className="help-resources-title",
+                                                ),
+                                                html.A(
+                                                    "Documentation",
+                                                    href=(
+                                                        "https://spinal-tap."
+                                                        "readthedocs.io/stable/"
+                                                    ),
+                                                    target="_blank",
+                                                    rel="noopener noreferrer",
+                                                    className=(
+                                                        "help-resource-link "
+                                                        "help-documentation-link"
+                                                    ),
+                                                ),
+                                                html.A(
+                                                    "GitHub repository",
+                                                    href=(
+                                                        "https://github.com/"
+                                                        "DeepLearnPhysics/spinal-tap"
+                                                    ),
+                                                    target="_blank",
+                                                    rel="noopener noreferrer",
+                                                    className="help-resource-link",
+                                                ),
+                                                html.A(
+                                                    "Report an issue",
+                                                    href=(
+                                                        "https://github.com/"
+                                                        "DeepLearnPhysics/spinal-tap/"
+                                                        "issues/new/choose"
+                                                    ),
+                                                    target="_blank",
+                                                    rel="noopener noreferrer",
+                                                    className="help-resource-link",
+                                                ),
+                                            ],
+                                            className="help-resources",
                                         ),
                                     ],
                                     className="help-popover",

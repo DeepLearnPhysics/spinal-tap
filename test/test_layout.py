@@ -367,10 +367,21 @@ def test_help_is_only_present_in_the_main_header():
     assert help_menu is not None
     assert help_menu.children[0].children == "?"
     assert help_menu.children[0].title == "Keyboard shortcuts"
-    documentation = component_by_class(help_menu, "help-documentation-link")
-    assert documentation.children == "Read the documentation"
-    assert documentation.href == "https://spinal-tap.readthedocs.io/stable/"
-    assert documentation.target == "_blank"
+    resources = component_by_class(help_menu, "help-resources")
+    assert resources.children[0].children == "Resources"
+    links = resources.children[1:]
+    assert [link.children for link in links] == [
+        "Documentation",
+        "GitHub repository",
+        "Report an issue",
+    ]
+    assert [link.href for link in links] == [
+        "https://spinal-tap.readthedocs.io/stable/",
+        "https://github.com/DeepLearnPhysics/spinal-tap",
+        "https://github.com/DeepLearnPhysics/spinal-tap/issues/new/choose",
+    ]
+    assert all(link.target == "_blank" for link in links)
+    assert all(link.rel == "noopener noreferrer" for link in links)
 
 
 def test_login_uses_dedicated_branded_layout():

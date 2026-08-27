@@ -263,19 +263,33 @@ html[data-spinal-tap-theme="dark"] body .brand-logo-dark {
   font-weight: 800;
 }
 
-.help-documentation-link {
-  display: block;
+.help-resources {
   margin-top: 10px;
   padding-top: 10px;
   border-top: 1px solid var(--line);
+}
+
+.help-resources-title {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.help-resource-link {
+  display: block;
+  padding: 4px 0;
   color: var(--spine-orange-dark);
   font-size: 12px;
   font-weight: 700;
   text-decoration: none;
 }
 
-.help-documentation-link:hover,
-.help-documentation-link:focus-visible {
+.help-resource-link:hover,
+.help-resource-link:focus-visible {
   color: var(--spine-orange);
   text-decoration: underline;
 }
