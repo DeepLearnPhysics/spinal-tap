@@ -7,11 +7,33 @@ name = "spinal-tap"
 dynamic = ["version"]
 description = "SPINE Reconstruction Visualization Tool"
 readme = "README.md"
+license = {text = "MIT"}
 authors = [
     {name = "DeepLearnPhysics Collaboration", email = "drielsma@stanford.edu"}
 ]
 maintainers = [
     {name = "Francois Drielsma", email = "drielsma@stanford.edu"}
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Visualization"
+]
+keywords = [
+    "event display",
+    "neutrino",
+    "particle imaging",
+    "physics",
+    "scientific visualization",
+    "WebGL"
 ]
 dependencies = [
     "spine[viz]>=1.0.1",
@@ -21,6 +43,12 @@ dependencies = [
     "anywidget"
 ]
 requires-python = ">=3.10"
+
+[project.urls]
+Homepage = "https://github.com/DeepLearnPhysics/spinal-tap"
+Repository = "https://github.com/DeepLearnPhysics/spinal-tap.git"
+Documentation = "https://spinal-tap.readthedocs.io/"
+"Bug Tracker" = "https://github.com/DeepLearnPhysics/spinal-tap/issues"
 
 [project.scripts]
 spinal-tap = "spinal_tap.app:main"
