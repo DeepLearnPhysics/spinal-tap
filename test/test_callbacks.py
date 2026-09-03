@@ -674,6 +674,8 @@ def test_application_serves_webgl_asset_and_callback_graph():
     assert b"Math.max(3.5, item.source.style?.size || 3)" in asset.data
     assert b"detectorBasis(this.scene.metadata.up_dir)" in asset.data
     assert b"cameraDirection(camera, this.cameraBasis)" in asset.data
+    assert b"setRotationCenter(position, viewIndex = 0)" in asset.data
+    assert b"camera.target = target.slice()" in asset.data
     assert b"const camera = this.cameras[index]" in asset.data
     assert b"this.mixedObjectViews" in asset.data
     assert b'document.body.classList.add("scene-loading")' in asset.data
@@ -721,6 +723,7 @@ def test_application_serves_webgl_asset_and_callback_graph():
     assert b'["vx", "vy", "vz"]' in asset.data
     assert b"formatPointCoordinate(value)" in asset.data
     assert b"best.item.activeSourceIndices[best.vertex]" in asset.data
+    assert b"point: Array.from(best.position, Number)" in asset.data
     assert b"attributeValues" in asset.data
     assert b"long_form_attributes" in asset.data
     assert b"root._spinalTapSceneUrl === sceneUrl" in asset.data
@@ -787,6 +790,13 @@ def test_application_serves_webgl_asset_and_callback_graph():
     assert dependencies.status_code == 200
     callback_graph = dependencies.get_json()
     assert any(callback["output"] == "store-color.data" for callback in callback_graph)
+    assert any(
+        callback["output"] == "store-camera-pivot.data" for callback in callback_graph
+    )
+    assert any(
+        callback["output"] == "button-center-camera.disabled"
+        for callback in callback_graph
+    )
     share_state = next(
         callback
         for callback in callback_graph

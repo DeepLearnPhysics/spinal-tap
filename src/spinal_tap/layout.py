@@ -940,6 +940,17 @@ def div_graph_daq():
                             html.Div(
                                 [
                                     html.Button(
+                                        "Center here",
+                                        id="button-center-camera",
+                                        type="button",
+                                        disabled=True,
+                                        title=(
+                                            "Use the selected point as the "
+                                            "WebGL view and GIF rotation center"
+                                        ),
+                                        className="viewer-action-button",
+                                    ),
+                                    html.Button(
                                         "Show only",
                                         id="button-isolate-object",
                                         type="button",
@@ -1280,6 +1291,7 @@ def main_layout():
                     dcc.Store(id="store-inspected-object"),
                     dcc.Store(id="store-inspection-action"),
                     dcc.Store(id="store-inspection-highlights"),
+                    dcc.Store(id="store-camera-pivot"),
                     dcc.Store(id="store-filter-render-request"),
                     dcc.Store(id="store-appearance-render-request"),
                     dcc.Store(id="store-object-match-links"),

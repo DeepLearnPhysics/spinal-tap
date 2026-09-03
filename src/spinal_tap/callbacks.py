@@ -1031,6 +1031,52 @@ def register_callbacks(app):
 
     app.clientside_callback(
         """
+        function(selection) {
+            return !(selection?.renderer === 'webgl'
+                && Array.isArray(selection.point)
+                && selection.point.length === 3
+                && selection.point.every(Number.isFinite));
+        }
+        """,
+        Output("button-center-camera", "disabled"),
+        Input("store-inspected-object", "data"),
+    )
+
+    app.clientside_callback(
+        """
+        function(nClicks, selection) {
+            if (!nClicks || selection?.renderer !== 'webgl'
+                    || !Array.isArray(selection.point)
+                    || selection.point.length !== 3
+                    || !selection.point.every(Number.isFinite)) {
+                return window.dash_clientside.no_update;
+            }
+
+            let centered = false;
+            document.querySelectorAll('.webgl-viewer').forEach(root => {
+                const viewer = root._spinalTapViewer;
+                if (viewer?.setRotationCenter) {
+                    centered = viewer.setRotationCenter(
+                        selection.point, selection.view
+                    ) || centered;
+                }
+            });
+            if (!centered) return window.dash_clientside.no_update;
+            return {
+                point: selection.point.slice(),
+                view: selection.view,
+                revision: Date.now()
+            };
+        }
+        """,
+        Output("store-camera-pivot", "data"),
+        Input("button-center-camera", "n_clicks"),
+        State("store-inspected-object", "data"),
+        prevent_initial_call=True,
+    )
+
+    app.clientside_callback(
+        """
         function(nClicks, selection, action, mode, recoSelection,
                  truthSelection, recoOptions, truthOptions, links) {
             if (!nClicks || !selection?.key) {

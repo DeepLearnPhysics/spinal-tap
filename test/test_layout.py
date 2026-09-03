@@ -160,6 +160,18 @@ def test_scene_overlays_use_direct_controls():
     assert color.className == "attribute-picker-state"
 
 
+def test_object_inspector_exposes_webgl_camera_center_action():
+    """The inspector should expose a guarded WebGL camera-center action."""
+    layout = main_layout()
+    center = component_by_id(layout, "button-center-camera")
+    pivot = component_by_id(layout, "store-camera-pivot")
+
+    assert center.children == "Center here"
+    assert center.disabled is True
+    assert center.className == "viewer-action-button"
+    assert pivot.__class__.__name__ == "Store"
+
+
 def test_viewer_contains_renderer_independent_object_inspector():
     """The canvas should expose one shared inspector for both renderers."""
     layout = main_layout()

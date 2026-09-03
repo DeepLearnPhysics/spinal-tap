@@ -2087,6 +2087,7 @@ body.scene-loading .log-alert-icon::after {
 .object-inspector-actions {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
   padding: 10px 14px;
   border-top: 1px solid var(--line);
 }

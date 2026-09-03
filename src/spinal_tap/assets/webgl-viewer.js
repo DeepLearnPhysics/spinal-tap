@@ -755,6 +755,33 @@
             this.draw();
         }
 
+        setRotationCenter(position, viewIndex = 0) {
+            const target = Array.from(position || [], Number);
+            if (!this.cameras.length || target.length !== 3 ||
+                    !target.every(Number.isFinite)) return false;
+
+            const index = Math.max(0, Math.min(
+                this.cameras.length - 1,
+                Math.trunc(Number(viewIndex) || 0)
+            ));
+            if (this.syncCameras) {
+                this.cameras.forEach(camera => {
+                    camera.target = target.slice();
+                });
+            } else if (this.cameras[index]) {
+                this.cameras[index].target = target.slice();
+            } else {
+                return false;
+            }
+            this.tooltip.hidden = true;
+            this.hoverItem = null;
+            this.hoverObject = null;
+            this.hoverCount = 0;
+            this.hoverMarker.hidden = true;
+            this.draw();
+            return true;
+        }
+
         viewIndexAt(clientX) {
             const bounds = this.canvas.getBoundingClientRect();
             const fraction = bounds.width
@@ -1955,6 +1982,7 @@
                     family: family,
                     renderer: "webgl",
                     view: best.viewIndex,
+                    point: Array.from(best.position, Number),
                     revision: Date.now()
                 }
             });
