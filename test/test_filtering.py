@@ -168,13 +168,19 @@ def test_attach_filter_metadata_skips_irrelevant_layers_and_checks_traces():
     irrelevant = SimpleNamespace(
         name="Detector", point_count=0, object_offsets=None, metadata={}
     )
+    auxiliary = SimpleNamespace(
+        name="Reco particle directions",
+        metadata={"kind": "directions", "object_name": "reco_particles"},
+    )
     empty = SimpleNamespace(
         name="Empty",
         point_count=0,
         object_offsets=np.asarray([0]),
         metadata={"object_name": "reco_particles"},
     )
-    scene = SimpleNamespace(views=[SimpleNamespace(layers=[irrelevant, empty])])
+    scene = SimpleNamespace(
+        views=[SimpleNamespace(layers=[irrelevant, auxiliary, empty])]
+    )
     attach_object_filter_metadata(go.Figure(), scene, revision=1)
 
     nonempty = SimpleNamespace(
@@ -208,4 +214,100 @@ def test_attach_filter_metadata_falls_back_to_contiguous_keys():
     assert figure.data[0].meta["spinal_tap_filter"]["keys"] == [
         "reco:0",
         "reco:1",
+    ]
+
+
+def test_attach_filter_metadata_maps_plotly_auxiliary_features():
+    """Plotly markers, arrow shafts and tips should retain semantic parents."""
+    marker = SimpleNamespace(
+        name="Reco particle start point",
+        positions=np.asarray([[1, 2, 3], [4, 5, 6]], dtype=float),
+        object_ids=np.asarray([0, 1]),
+        metadata={"kind": "start_point", "object_name": "reco_particles"},
+    )
+    direction = SimpleNamespace(
+        name="Reco particle directions",
+        origins=np.asarray([[0, 0, 0], [10, 0, 0]], dtype=float),
+        vectors=np.asarray([[1, 0, 0], [0, 1, 0]], dtype=float),
+        object_ids=np.asarray([0, 1]),
+        scale=10,
+        head_size=0.25,
+        metadata={"kind": "directions", "object_name": "reco_particles"},
+    )
+    vertex = SimpleNamespace(
+        name="Reco interaction vertex",
+        positions=np.asarray([[7, 8, 9]], dtype=float),
+        object_ids=np.asarray([5]),
+        metadata={"kind": "vertex", "object_name": "reco_interactions"},
+    )
+    figure = go.Figure(
+        data=[
+            go.Scatter3d(
+                name=marker.name,
+                mode="markers",
+                x=marker.positions[:, 0],
+                y=marker.positions[:, 1],
+                z=marker.positions[:, 2],
+            ),
+            go.Scatter3d(
+                name=direction.name,
+                mode="lines",
+                x=[0, 10, None, 10, 10, None],
+                y=[0, 0, None, 0, 10, None],
+                z=[0, 0, None, 0, 0, None],
+            ),
+            go.Cone(
+                name=direction.name,
+                x=[10, 8.75],
+                y=[8.75, 0],
+                z=[0, 0],
+                u=[0, 2.5],
+                v=[2.5, 0],
+                w=[0, 0],
+            ),
+            go.Scatter3d(
+                name=direction.name,
+                mode="markers",
+                x=[0],
+                y=[0],
+                z=[0],
+            ),
+            go.Scatter3d(
+                name=vertex.name,
+                mode="markers",
+                x=vertex.positions[:, 0],
+                y=vertex.positions[:, 1],
+                z=vertex.positions[:, 2],
+            ),
+        ]
+    )
+    scene = SimpleNamespace(views=[SimpleNamespace(layers=[marker, direction, vertex])])
+
+    attach_object_filter_metadata(
+        figure,
+        scene,
+        revision=1,
+        selection=["reco:4", "reco:9"],
+        filter_family="particles",
+    )
+
+    marker_config = figure.data[0].meta["spinal_tap_feature"]
+    assert marker_config == {
+        "kind": "start_point",
+        "prefix": "reco",
+        "family": "particles",
+        "records": [
+            {"position": 4, "point": [1.0, 2.0, 3.0]},
+            {"position": 9, "point": [4.0, 5.0, 6.0]},
+        ],
+    }
+    shaft_records = figure.data[1].meta["spinal_tap_feature"]["records"]
+    assert [record["position"] for record in shaft_records] == [4, 4, 4, 9, 9, 9]
+    assert shaft_records[0]["point"] == [0.0, 0.0, 0.0]
+    assert shaft_records[0]["vector"] == [1.0, 0.0, 0.0]
+    tip_records = figure.data[2].meta["spinal_tap_feature"]["records"]
+    assert [record["position"] for record in tip_records] == [9, 4]
+    assert figure.data[3].meta is None
+    assert figure.data[4].meta["spinal_tap_feature"]["records"] == [
+        {"position": 5, "point": [7.0, 8.0, 9.0]}
     ]

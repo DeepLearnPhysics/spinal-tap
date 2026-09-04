@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
+
 __all__ = [
     "build_object_filter_options",
     "build_object_match_links",
@@ -22,8 +24,94 @@ def _compact_count(value: int) -> str:
     return f"{value / 1_000_000:.1f}".rstrip("0").rstrip(".") + "M"
 
 
+def _feature_record(layer: Any, index: int, point: np.ndarray, position: int) -> dict:
+    """Build one browser inspection record for an auxiliary scene layer."""
+    record = {
+        "position": position,
+        "point": np.asarray(point, dtype=float).tolist(),
+    }
+    if layer.metadata.get("kind") == "directions":
+        record["vector"] = np.asarray(layer.vectors[index], dtype=float).tolist()
+    return record
+
+
+def _attach_feature_metadata(
+    figure: Any,
+    layer: Any,
+    selection: list[str] | None,
+    filter_family: str | None,
+) -> None:
+    """Attach semantic parent and coordinate mappings to Plotly auxiliaries."""
+    kind = layer.metadata.get("kind")
+    object_name = layer.metadata.get("object_name")
+    if kind not in {"start_point", "end_point", "vertex", "directions"}:
+        return
+    if object_name is None or getattr(layer, "object_ids", None) is None:
+        return
+
+    prefix, family = object_name.split("_", 1)
+    selected_positions = []
+    if family == filter_family:
+        keys = [key for key in (selection or []) if key.startswith(f"{prefix}:")]
+        keys.sort(key=lambda key: int(key.split(":", 1)[1]))
+        selected_positions = [int(key.split(":", 1)[1]) for key in keys]
+
+    def position(index: int) -> int:
+        object_index = int(layer.object_ids[index])
+        if object_index < len(selected_positions):
+            return selected_positions[object_index]
+        return object_index
+
+    traces = [trace for trace in figure.data if trace.name == layer.name]
+    mappings = []
+    if kind != "directions":
+        positions = np.asarray(layer.positions)
+        mappings = [
+            (trace, np.arange(len(positions), dtype=int), positions)
+            for trace in traces
+            if trace.type == "scatter3d" and len(trace.x) == len(positions)
+        ]
+    else:
+        origins = np.asarray(layer.origins)
+        vectors = np.asarray(layer.vectors)
+        ends = origins + (1 - layer.head_size / 2) * layer.scale * vectors
+        for trace in traces:
+            if trace.type == "scatter3d" and len(trace.x) == 3 * len(origins):
+                indices = np.repeat(np.arange(len(origins), dtype=int), 3)
+            elif trace.type == "cone" and len(trace.x):
+                points = np.column_stack((trace.x, trace.y, trace.z)).astype(float)
+                distances = np.sum((points[:, None, :] - ends[None, :, :]) ** 2, axis=2)
+                indices = np.argmin(distances, axis=1)
+            else:
+                continue
+            mappings.append((trace, indices, origins))
+
+    for trace, indices, points in mappings:
+        records = [
+            _feature_record(
+                layer,
+                int(index),
+                points[int(index)],
+                position(int(index)),
+            )
+            for index in indices
+        ]
+        metadata = dict(trace.meta or {})
+        metadata["spinal_tap_feature"] = {
+            "kind": kind,
+            "prefix": prefix,
+            "family": family,
+            "records": records,
+        }
+        trace.meta = metadata
+
+
 def attach_object_filter_metadata(
-    figure: Any, scene: Any, revision: int | str, selection: list[str] | None = None
+    figure: Any,
+    scene: Any,
+    revision: int | str,
+    selection: list[str] | None = None,
+    filter_family: str | None = None,
 ) -> None:
     """Attach compact object boundaries to combined point-cloud traces.
 
@@ -37,6 +125,8 @@ def attach_object_filter_metadata(
         Unique render revision used to invalidate browser-side array caches.
     selection : list[str], optional
         Object-filter selection associated with this figure render.
+    filter_family : str, optional
+        Object family to which the compacted selection indices belong.
 
     Raises
     ------
@@ -54,8 +144,12 @@ def attach_object_filter_metadata(
 
     for view in scene.views:
         for layer in view.layers:
+            _attach_feature_metadata(
+                figure, layer, selection=selection, filter_family=filter_family
+            )
             object_name = layer.metadata.get("object_name")
-            if object_name is None or layer.object_offsets is None:
+            object_offsets = getattr(layer, "object_offsets", None)
+            if object_name is None or object_offsets is None:
                 continue
 
             prefix = object_name.split("_", 1)[0]
@@ -72,7 +166,7 @@ def attach_object_filter_metadata(
                     f"found {len(matches)}."
                 )
 
-            object_count = len(layer.object_offsets) - 1
+            object_count = len(object_offsets) - 1
             keys = [key for key in (selection or []) if key.startswith(f"{prefix}:")]
             keys.sort(key=lambda key: int(key.split(":", 1)[1]))
             if len(keys) != object_count:
@@ -82,7 +176,7 @@ def attach_object_filter_metadata(
             trace_metadata["spinal_tap_filter"] = {
                 "prefix": prefix,
                 "family": object_name.split("_", 1)[1],
-                "offsets": layer.object_offsets.tolist(),
+                "offsets": object_offsets.tolist(),
                 "keys": keys,
             }
             matches[0].meta = trace_metadata

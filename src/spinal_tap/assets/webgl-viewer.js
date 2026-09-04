@@ -1988,6 +1988,18 @@
                     !["fragments", "particles", "interactions"].includes(family)) {
                 return;
             }
+            const sourceIndex = best.item.activeSourceIndices[best.vertex];
+            const kind = best.item.source.metadata.kind || "object_point";
+            let point = Array.from(best.position, Number);
+            let vector = null;
+            if (best.item.source.type === "vector") {
+                point = Array.from(best.item.source.origins.subarray(
+                    sourceIndex * 3, sourceIndex * 3 + 3
+                ), Number);
+                vector = Array.from(best.item.source.vectors.subarray(
+                    sourceIndex * 3, sourceIndex * 3 + 3
+                ), Number);
+            }
             this.setInspection(best, object);
             window.dash_clientside?.set_props?.("store-inspected-object", {
                 data: {
@@ -1997,7 +2009,12 @@
                     family: family,
                     renderer: "webgl",
                     view: best.viewIndex,
-                    point: Array.from(best.position, Number),
+                    point: point,
+                    feature: {
+                        kind: kind,
+                        point: point.slice(),
+                        vector: vector
+                    },
                     revision: Date.now()
                 }
             });

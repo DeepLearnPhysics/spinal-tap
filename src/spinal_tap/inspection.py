@@ -6,7 +6,16 @@ from typing import Any
 
 import numpy as np
 
-__all__ = ["inspect_object", "object_collection_key"]
+__all__ = ["inspect_feature", "inspect_object", "object_collection_key"]
+
+
+_FEATURE_LABELS = {
+    "object_point": "Object point",
+    "start_point": "Start point",
+    "end_point": "End point",
+    "vertex": "Vertex",
+    "directions": "Direction",
+}
 
 
 _GROUPS = {
@@ -201,6 +210,34 @@ def _format_value(value: Any, enum_values: dict[int, str] | None = None) -> str:
 def _label(name: str) -> str:
     """Turn a Python attribute name into a compact human-readable label."""
     return name.replace("_", " ").capitalize()
+
+
+def _feature_vector(value: Any) -> np.ndarray | None:
+    """Return a finite three-vector from a browser selection payload."""
+    try:
+        vector = np.asarray(value, dtype=float)
+    except (TypeError, ValueError):
+        return None
+    if vector.shape != (3,) or not np.all(np.isfinite(vector)):
+        return None
+    return vector
+
+
+def inspect_feature(feature: Any) -> dict | None:
+    """Build compact context for a selected point, vertex or direction."""
+    if not isinstance(feature, dict):
+        return None
+    kind = feature.get("kind")
+    point = _feature_vector(feature.get("point"))
+    if kind not in _FEATURE_LABELS or point is None:
+        return None
+
+    rows = [{"label": "Position", "value": f"{_format_value(point)} cm"}]
+    if kind == "directions":
+        vector = _feature_vector(feature.get("vector"))
+        if vector is not None:
+            rows.append({"label": "Vector", "value": _format_value(vector)})
+    return {"title": _FEATURE_LABELS[kind], "rows": rows}
 
 
 def inspect_object(obj: Any, prefix: str, family: str, position: int) -> dict:

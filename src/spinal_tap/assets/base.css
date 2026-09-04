@@ -2061,6 +2061,13 @@ body.scene-loading .log-alert-icon::after {
   text-transform: uppercase;
 }
 
+.object-inspector-feature-name {
+  margin: 0 0 7px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .object-inspector-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);

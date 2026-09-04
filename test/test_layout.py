@@ -184,6 +184,7 @@ def test_viewer_contains_renderer_independent_object_inspector():
     assert component_by_id(layout, "button-close-inspector") is not None
     isolate = component_by_id(layout, "button-isolate-object")
     assert isolate.children == "Show only"
+    assert isolate.disabled is True
     assert isolate.__dict__["aria-pressed"] == "false"
 
 

@@ -954,6 +954,7 @@ def div_graph_daq():
                                         "Show only",
                                         id="button-isolate-object",
                                         type="button",
+                                        disabled=True,
                                         title="Show only this object",
                                         className="viewer-action-button",
                                         **{"aria-pressed": "false"},

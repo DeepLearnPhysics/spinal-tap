@@ -98,7 +98,11 @@ def test_object_inspector_uses_cached_event_data(callback_app, monkeypatch):
     monkeypatch.setattr(
         callback_module,
         "load_data",
-        lambda *args: ({"reco_particles": [obj]}, None, None),
+        lambda reader, entry, mode, family: (
+            {f"reco_{family}": [obj]},
+            None,
+            None,
+        ),
     )
 
     title, match_summary, content, hidden = callback(
@@ -117,6 +121,24 @@ def test_object_inspector_uses_cached_event_data(callback_app, monkeypatch):
         "Energy & kinematics",
         "Object matching",
     ]
+
+    _, _, content, _ = callback(
+        {
+            "prefix": "reco",
+            "position": 0,
+            "family": "particles",
+            "feature": {
+                "kind": "start_point",
+                "point": [1.0, 2.0, 3.0],
+            },
+        },
+        {"file_path": "/tmp/event.h5", "entry": 3},
+        "reco",
+        "particles",
+    )
+    assert content[0].children[0].children == "Selected feature"
+    assert content[0].children[1].children == "Start point"
+    assert content[0].children[2].children[1].children == "[1, 2, 3] cm"
 
     _, match_summary, _, _ = callback(
         {"key": "reco:0", "prefix": "reco", "position": 0, "family": "particles"},
@@ -139,6 +161,22 @@ def test_object_inspector_uses_cached_event_data(callback_app, monkeypatch):
         [],
     )
     assert match_summary == "No matched truth particles"
+
+    title, _, content, hidden = callback(
+        {
+            "key": "reco:0",
+            "prefix": "reco",
+            "position": 0,
+            "family": "interactions",
+            "feature": {"kind": "vertex", "point": [4, 5, 6]},
+        },
+        {"file_path": "/tmp/event.h5", "entry": 3},
+        "reco",
+        "particles",
+    )
+    assert title == "Reco Interaction 17"
+    assert content[0].children[1].children == "Vertex"
+    assert hidden is False
 
 
 def test_object_inspector_rejects_stale_selection(callback_app):
@@ -723,7 +761,12 @@ def test_application_serves_webgl_asset_and_callback_graph():
     assert b'["vx", "vy", "vz"]' in asset.data
     assert b"formatPointCoordinate(value)" in asset.data
     assert b"best.item.activeSourceIndices[best.vertex]" in asset.data
-    assert b"point: Array.from(best.position, Number)" in asset.data
+    assert b"let point = Array.from(best.position, Number)" in asset.data
+    assert (
+        b'const kind = best.item.source.metadata.kind || "object_point"' in asset.data
+    )
+    assert b"best.item.source.origins.subarray(" in asset.data
+    assert b"feature: {" in asset.data
     assert b"attributeValues" in asset.data
     assert b"long_form_attributes" in asset.data
     assert b"root._spinalTapSceneUrl === sceneUrl" in asset.data

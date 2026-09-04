@@ -18,7 +18,7 @@ from .filtering import (
     build_object_match_links,
     filter_event_objects,
 )
-from .inspection import inspect_object, object_collection_key
+from .inspection import inspect_feature, inspect_object, object_collection_key
 from .scene import scene_store
 from .source import read_file_manifest
 from .utils import (
@@ -994,6 +994,30 @@ def register_callbacks(app):
             const point = clickData.points[0];
             const plot = document.querySelector('#graph-evd .js-plotly-plot');
             const trace = plot?.data?.[point.curveNumber];
+            const featureConfig = trace?.meta?.spinal_tap_feature;
+            const featureRecord = featureConfig?.records?.[point.pointNumber];
+            if (featureRecord) {
+                const selectedPoint = (featureRecord.point || []).map(Number);
+                if (selectedPoint.length !== 3 ||
+                        !selectedPoint.every(Number.isFinite)) {
+                    return window.dash_clientside.no_update;
+                }
+                return {
+                    key: `${featureConfig.prefix}:${featureRecord.position}`,
+                    prefix: featureConfig.prefix,
+                    position: Number(featureRecord.position),
+                    family: featureConfig.family,
+                    renderer: 'plotly',
+                    view: trace.scene === 'scene2' ? 1 : 0,
+                    point: selectedPoint,
+                    feature: {
+                        kind: featureConfig.kind,
+                        point: selectedPoint.slice(),
+                        vector: featureRecord.vector || null
+                    },
+                    revision: Date.now()
+                };
+            }
             const config = trace?.meta?.spinal_tap_filter;
             if (!config || point.pointNumber == null) {
                 return window.dash_clientside.no_update;
@@ -1012,12 +1036,22 @@ def register_callbacks(app):
 
             const key = (config.keys || [])[objectIndex] ||
                 `${config.prefix}:${objectIndex}`;
+            const selectedPoint = [point.x, point.y, point.z].map(Number);
+            const hasPoint = selectedPoint.length === 3 &&
+                selectedPoint.every(Number.isFinite);
             return {
                 key: key,
                 prefix: config.prefix,
                 position: Number(key.split(':')[1]),
                 family: config.family || 'particles',
                 renderer: 'plotly',
+                view: trace.scene === 'scene2' ? 1 : 0,
+                point: hasPoint ? selectedPoint : null,
+                feature: hasPoint ? {
+                    kind: 'object_point',
+                    point: selectedPoint.slice(),
+                    vector: null
+                } : null,
                 revision: Date.now()
             };
         }
@@ -1077,9 +1111,9 @@ def register_callbacks(app):
 
     app.clientside_callback(
         """
-        function(nClicks, selection, action, mode, recoSelection,
+        function(nClicks, selection, action, mode, family, recoSelection,
                  truthSelection, recoOptions, truthOptions, links) {
-            if (!nClicks || !selection?.key) {
+            if (!nClicks || !selection?.key || selection.family !== family) {
                 return window.dash_clientside.no_update;
             }
             const available = {
@@ -1092,7 +1126,8 @@ def register_callbacks(app):
             };
             let next;
             let nextAction;
-            if (action?.active && action.key === selection.key) {
+            if (action?.active && action.key === selection.key &&
+                    action.family === selection.family) {
                 next = {
                     reco: (action.previous?.reco || []).filter(
                         key => available.reco.has(key)
@@ -1114,6 +1149,7 @@ def register_callbacks(app):
                 nextAction = {
                     active: true,
                     key: selection.key,
+                    family: selection.family,
                     // Keep the selection from before isolation began, even if
                     // the user moves directly from one isolated object to
                     // another. "Show all" then returns to the original view.
@@ -1149,6 +1185,7 @@ def register_callbacks(app):
         State("store-inspected-object", "data"),
         State("store-inspection-action", "data"),
         State("radio-run-mode", "value"),
+        State("radio-object-mode", "value"),
         State("dropdown-reco-filter", "value"),
         State("dropdown-truth-filter", "value"),
         State("dropdown-reco-filter", "options"),
@@ -1159,9 +1196,13 @@ def register_callbacks(app):
 
     app.clientside_callback(
         """
-        function(action, selection) {
+        function(action, selection, family) {
+            const available = Boolean(
+                selection?.key && selection.family === family
+            );
             const active = Boolean(
-                action?.active && selection?.key === action.key
+                available && action?.active && selection?.key === action.key &&
+                selection.family === action.family
             );
             return [
                 active ? 'Show all' : 'Show only',
@@ -1171,7 +1212,11 @@ def register_callbacks(app):
                 active ? 'true' : 'false',
                 active
                     ? 'Restore the previous object selection'
-                    : 'Show only this object and its one-hop matches'
+                    : available
+                        ? 'Show only this object and its one-hop matches'
+                        : `Switch to ${selection?.family || 'this object family'} `
+                            + 'to isolate this object',
+                !available
             ];
         }
         """,
@@ -1179,14 +1224,19 @@ def register_callbacks(app):
         Output("button-isolate-object", "className"),
         Output("button-isolate-object", "aria-pressed"),
         Output("button-isolate-object", "title"),
+        Output("button-isolate-object", "disabled"),
         Input("store-inspection-action", "data"),
         Input("store-inspected-object", "data"),
+        Input("radio-object-mode", "value"),
     )
 
     app.clientside_callback(
         """
-        function(selection, links) {
-            const matches = selection?.key ? (links?.[selection.key] || []) : [];
+        function(selection, links, family) {
+            const sameFamily = selection?.family === family;
+            const matches = sameFamily && selection?.key
+                ? (links?.[selection.key] || [])
+                : [];
             document.querySelectorAll('.webgl-viewer').forEach(root =>
                 root._spinalTapViewer?.setInspectionMatches?.(selection, matches)
             );
@@ -1249,7 +1299,11 @@ def register_callbacks(app):
                         meta: {spinal_tap_inspection_overlay: true}
                     });
                 };
-                addOverlay(selection?.key ? [selection.key] : [], 1, 'Selected object');
+                addOverlay(
+                    sameFamily && selection?.key ? [selection.key] : [],
+                    1,
+                    'Selected object'
+                );
                 addOverlay(matches, 0.78, 'Matched objects');
                 if (overlays.length) window.Plotly.addTraces(plot, overlays);
             }
@@ -1261,6 +1315,7 @@ def register_callbacks(app):
         Output("store-inspection-highlights", "data"),
         Input("store-inspected-object", "data"),
         State("store-object-match-links", "data"),
+        State("radio-object-mode", "value"),
         prevent_initial_call=True,
     )
 
@@ -1296,28 +1351,25 @@ def register_callbacks(app):
         selected_family = selection.get("family", family)
         valid_prefix = prefix in {"reco", "truth"}
         visible_prefix = mode == "both" or mode == prefix
-        if (
-            not valid_prefix
-            or not visible_prefix
-            or selected_family != family
-            or not isinstance(position, int)
-        ):
+        if not valid_prefix or not visible_prefix or not isinstance(position, int):
             return "", "", [], True
 
         try:
             reader = initialize_reader(
                 loaded_event["file_path"], loaded_event.get("use_run", False)
             )
-            data, *_ = load_data(reader, loaded_event["entry"], mode, family)
-            collection = data[object_collection_key(prefix, family)]
+            data, *_ = load_data(reader, loaded_event["entry"], mode, selected_family)
+            collection = data[object_collection_key(prefix, selected_family)]
             if position < 0 or position >= len(collection):
                 return "", "", [], True
-            summary = inspect_object(collection[position], prefix, family, position)
+            summary = inspect_object(
+                collection[position], prefix, selected_family, position
+            )
         except (KeyError, OSError, TypeError, ValueError):
             return "", "", [], True
 
         match_prefix = "Truth" if prefix == "reco" else "Reco"
-        if links is not None:
+        if links is not None and selected_family == family:
             match_keys = links.get(selection["key"], [])
             options = truth_options if prefix == "reco" else reco_options
             labels = {
@@ -1327,7 +1379,7 @@ def register_callbacks(app):
             matches = [labels.get(key, key) for key in match_keys]
         else:
             matches = [
-                f"{match_prefix} {family[:-1].capitalize()} {int(match)}"
+                f"{match_prefix} {selected_family[:-1].capitalize()} {int(match)}"
                 for match in getattr(collection[position], "match_ids", [])
             ]
         if matches:
@@ -1337,7 +1389,7 @@ def register_callbacks(app):
             else:
                 match_summary = f"Matched {match_prefix.lower()}: " + ", ".join(matches)
         else:
-            match_summary = f"No matched {match_prefix.lower()} {family}"
+            match_summary = f"No matched {match_prefix.lower()} {selected_family}"
 
         group_labels = {
             "overview": "Overview",
@@ -1352,6 +1404,27 @@ def register_callbacks(app):
             "details": "Additional attributes",
         }
         sections = []
+        feature = inspect_feature(selection.get("feature"))
+        if feature is not None:
+            entries = []
+            for row in feature["rows"]:
+                entries.extend([html.Dt(row["label"]), html.Dd(row["value"])])
+            sections.append(
+                html.Section(
+                    [
+                        html.H4(
+                            "Selected feature",
+                            className="object-inspector-group-title",
+                        ),
+                        html.Div(
+                            feature["title"],
+                            className="object-inspector-feature-name",
+                        ),
+                        html.Dl(entries, className="object-inspector-grid"),
+                    ],
+                    className="object-inspector-group object-inspector-feature",
+                )
+            )
         for group, rows in summary["groups"].items():
             entries = []
             for row in rows:
@@ -3598,6 +3671,7 @@ def register_callbacks(app):
                     scene,
                     revision=uuid.uuid4().hex,
                     selection=active_filter,
+                    filter_family=obj,
                 )
                 figure.update_layout(
                     width=None,

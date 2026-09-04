@@ -5,7 +5,12 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from spinal_tap.inspection import _format_value, inspect_object, object_collection_key
+from spinal_tap.inspection import (
+    _format_value,
+    inspect_feature,
+    inspect_object,
+    object_collection_key,
+)
 
 
 class Inspectable(SimpleNamespace):
@@ -37,6 +42,53 @@ def test_object_collection_key_validates_selection_domains():
         object_collection_key("raw", "particles")
     with pytest.raises(ValueError, match="family"):
         object_collection_key("reco", "hits")
+
+
+def test_inspect_feature_formats_points_and_directions():
+    """Picked auxiliary geometry should expose compact semantic context."""
+    point = inspect_feature({"kind": "end_point", "point": [1, 2.5, 3]})
+    direction = inspect_feature(
+        {
+            "kind": "directions",
+            "point": [4, 5, 6],
+            "vector": [0.25, -0.5, 1],
+        }
+    )
+
+    assert point == {
+        "title": "End point",
+        "rows": [{"label": "Position", "value": "[1, 2.5, 3] cm"}],
+    }
+    assert direction == {
+        "title": "Direction",
+        "rows": [
+            {"label": "Position", "value": "[4, 5, 6] cm"},
+            {"label": "Vector", "value": "[0.25, -0.5, 1]"},
+        ],
+    }
+
+
+@pytest.mark.parametrize(
+    "feature",
+    [
+        None,
+        {"kind": "unknown", "point": [1, 2, 3]},
+        {"kind": "vertex", "point": [1, 2]},
+        {"kind": "vertex", "point": [1, np.inf, 3]},
+        {"kind": "vertex", "point": "bad"},
+    ],
+)
+def test_inspect_feature_rejects_invalid_payloads(feature):
+    """Malformed client selections should not add inspector sections."""
+    assert inspect_feature(feature) is None
+
+
+def test_inspect_direction_tolerates_a_missing_vector():
+    """A valid origin remains useful if direction metadata is unavailable."""
+    result = inspect_feature(
+        {"kind": "directions", "point": [1, 2, 3], "vector": [1, 2]}
+    )
+    assert result["rows"] == [{"label": "Position", "value": "[1, 2, 3] cm"}]
 
 
 def test_inspect_object_groups_and_formats_attributes():
