@@ -67,6 +67,25 @@
         return (value || fallback).slice(0, 48);
     }
 
+    function sourceName(source) {
+        let value = String(source || "").trim();
+        let fallback = "spinal-tap";
+        try {
+            const url = new URL(value);
+            value = url.pathname;
+            fallback = url.hostname || fallback;
+        } catch (_) {
+            value = value.split(/[?#]/, 1)[0];
+        }
+        const parts = value.replaceAll("\\", "/").split("/").filter(Boolean);
+        try {
+            value = decodeURIComponent(parts.at(-1) || fallback);
+        } catch (_) {
+            value = parts.at(-1) || fallback;
+        }
+        return value.length > 48 ? `${value.slice(0, 45)}...` : value;
+    }
+
     function exportBaseName(state) {
         const entry = Number.isInteger(state?.entry) ? state.entry : 0;
         const mode = String(state?.display?.run_mode || "reco");
@@ -76,7 +95,9 @@
 
     async function brandingAssets(state) {
         const branding = state?.branding || {};
-        const enabled = new Set(branding.watermarks || ["spine"]);
+        const enabled = new Set(
+            branding.labels || branding.watermarks || ["spine", "entry"]
+        );
         const requests = [];
         if (enabled.has("detector")) {
             const detector = detectorLogo(
@@ -96,6 +117,30 @@
         }));
     }
 
+    function exportLabelText(state) {
+        const branding = state?.branding || {};
+        const enabled = new Set(
+            branding.labels || branding.watermarks || ["spine", "entry"]
+        );
+        const labels = [];
+        if (enabled.has("source")) labels.push(sourceName(state?.file));
+        if (enabled.has("entry") && Number.isInteger(state?.entry)) {
+            labels.push(`Entry ${state.entry}`);
+        }
+        if (enabled.has("run") && [state?.run, state?.subrun, state?.event]
+                .every(value => Number.isInteger(value))) {
+            labels.push(
+                `Run ${state.run} / Subrun ${state.subrun} / Event ${state.event}`
+            );
+        }
+        return labels.join(" · ");
+    }
+
+    function hasExportViewTitles(state) {
+        return state?.display?.run_mode === "both" &&
+            (state?.display?.view || []).includes("split_scene");
+    }
+
     function watermarkDimensions(asset, width, height) {
         const maximumWidth = width * (asset.kind === "spine" ? 0.20 : 0.15);
         // Wide marks such as DUNE are naturally constrained by width. Keep
@@ -111,7 +156,7 @@
         };
     }
 
-    function drawBranding(context, width, height, assets) {
+    function drawBranding(context, width, height, assets, state) {
         const margin = Math.max(8, Math.min(width, height) * 0.018);
         assets.forEach(asset => {
             const size = watermarkDimensions(asset, width, height);
@@ -121,6 +166,22 @@
             const y = height - margin - size.height;
             context.drawImage(asset.image, x, y, size.width, size.height);
         });
+        const label = exportLabelText(state);
+        if (label) {
+            let fontSize = Math.max(11, Math.min(width, height) * 0.022);
+            context.save();
+            context.fillStyle = darkTheme() ? "#f4f6f8" : "#172033";
+            context.font = `600 ${fontSize}px system-ui, sans-serif`;
+            while (fontSize > 10 &&
+                    context.measureText(label).width > width - 2 * margin) {
+                fontSize -= 1;
+                context.font = `600 ${fontSize}px system-ui, sans-serif`;
+            }
+            context.textAlign = "left";
+            context.textBaseline = "top";
+            context.fillText(label, margin, margin);
+            context.restore();
+        }
     }
 
     function imageDataUrl(image) {
@@ -157,6 +218,39 @@
                 layer: "above"
             };
         });
+    }
+
+    function plotlyLabelAnnotations(state) {
+        const label = exportLabelText(state);
+        if (!label) return [];
+        return [{
+            text: label.replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+                .replaceAll(">", "&gt;"),
+            xref: "paper",
+            yref: "paper",
+            x: 0.01,
+            y: 0.99,
+            xanchor: "left",
+            yanchor: "top",
+            showarrow: false,
+            font: {
+                color: darkTheme() ? "#f4f6f8" : "#172033",
+                size: 13
+            }
+        }];
+    }
+
+    function plotlyExportAnnotations(graph, state) {
+        const hasLabel = Boolean(exportLabelText(state));
+        const annotations = (graph.layout?.annotations || []).map(annotation => {
+            const subplotTitle = hasLabel && hasExportViewTitles(state) &&
+                annotation.xref === "paper" && annotation.yref === "paper" &&
+                Number(annotation.y) >= 0.95;
+            return subplotTitle
+                ? {...annotation, y: 0.93, yanchor: "top"}
+                : annotation;
+        });
+        return [...annotations, ...plotlyLabelAnnotations(state)];
     }
 
     function base64UrlEncode(value) {
@@ -333,8 +427,9 @@
             await viewer.saveImage(
                 `${exportBaseName(state)}.png`,
                 (context, width, height) => {
-                    drawBranding(context, width, height, assets);
-                }
+                    drawBranding(context, width, height, assets, state);
+                },
+                Boolean(exportLabelText(state))
             );
             return;
         }
@@ -342,8 +437,13 @@
         const graph = document.querySelector("#graph-evd .js-plotly-plot");
         if (!graph || !window.Plotly) return;
         const original = graph.layout.images || [];
+        const originalAnnotations = graph.layout.annotations || [];
         const watermarks = plotlyBrandingImages(graph, assets);
-        await Plotly.relayout(graph, {images: [...original, ...watermarks]});
+        const annotations = plotlyExportAnnotations(graph, state);
+        await Plotly.relayout(graph, {
+            images: [...original, ...watermarks],
+            annotations: annotations
+        });
         try {
             await Plotly.downloadImage(graph, {
                 format: "png",
@@ -351,7 +451,10 @@
                 scale: 2
             });
         } finally {
-            await Plotly.relayout(graph, {images: original});
+            await Plotly.relayout(graph, {
+                images: original,
+                annotations: originalAnnotations
+            });
         }
     }
 
@@ -364,8 +467,9 @@
             progress,
             `${exportBaseName(state)}.gif`,
             (context, width, height) => {
-                drawBranding(context, width, height, assets);
-            }
+                drawBranding(context, width, height, assets, state);
+            },
+            Boolean(exportLabelText(state))
         );
     }
 
@@ -417,6 +521,7 @@
             ...(figure.layout.images || []),
             ...plotlyBrandingImages(graph, assets)
         ];
+        figure.layout.annotations = plotlyExportAnnotations(figure, state);
         const figureJson = JSON.stringify(figure).replace(/</g, "\\u003c");
         const source = await plotlySource();
         const documentText = `<!doctype html>

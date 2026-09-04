@@ -223,7 +223,7 @@ def test_layout_contains_shared_view_controls():
     save = component_by_id(actions, "button-save-png")
     scene_export = component_by_id(actions, "button-save-scene")
     branding = component_by_id(actions, "export-branding-menu")
-    watermarks = component_by_id(actions, "checklist-export-watermarks")
+    labels = component_by_id(actions, "checklist-export-labels")
     export = component_by_id(actions, "button-export-view")
     file_path = component_by_id(layout, "input-file-path")
     assert file_path.n_submit == 0
@@ -238,11 +238,14 @@ def test_layout_contains_shared_view_controls():
     assert scene_export.children == "Save GIF"
     assert scene_export.disabled is True
     assert scene_export.title == "GIF export is available in WebGL mode"
-    assert branding.children[0].children == "Branding"
-    assert watermarks.value == ["spine"]
-    assert [option["value"] for option in watermarks.options] == [
+    assert branding.children[0].children == "Labels"
+    assert labels.value == ["spine", "entry"]
+    assert [option["value"] for option in labels.options] == [
         "spine",
         "detector",
+        "source",
+        "entry",
+        "run",
     ]
     assert export.disabled is True
     assert file_path.placeholder == "HDF5, manifest, or view path..."

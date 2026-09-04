@@ -1015,25 +1015,22 @@ def div_graph_daq():
                                     html.Details(
                                         [
                                             html.Summary(
-                                                "Branding",
+                                                "Labels",
                                                 title=(
-                                                    "Choose logos included in "
+                                                    "Choose labels included in "
                                                     "exported scenes"
                                                 ),
                                             ),
                                             html.Div(
                                                 [
                                                     html.Div(
-                                                        "Export watermarks",
+                                                        "Include in exports",
                                                         className=(
                                                             "export-branding-title"
                                                         ),
                                                     ),
                                                     dcc.Checklist(
-                                                        id=(
-                                                            "checklist-export-"
-                                                            "watermarks"
-                                                        ),
+                                                        id="checklist-export-labels",
                                                         options=[
                                                             {
                                                                 "label": "SPINE",
@@ -1045,8 +1042,23 @@ def div_graph_daq():
                                                                 ),
                                                                 "value": "detector",
                                                             },
+                                                            {
+                                                                "label": "Source name",
+                                                                "value": "source",
+                                                            },
+                                                            {
+                                                                "label": "Entry",
+                                                                "value": "entry",
+                                                            },
+                                                            {
+                                                                "label": (
+                                                                    "Run / Subrun / "
+                                                                    "Event"
+                                                                ),
+                                                                "value": "run",
+                                                            },
                                                         ],
-                                                        value=["spine"],
+                                                        value=["spine", "entry"],
                                                         className=(
                                                             "export-watermark-"
                                                             "options"

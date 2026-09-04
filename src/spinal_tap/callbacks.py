@@ -1403,7 +1403,7 @@ def register_callbacks(app):
                  colorMin, colorMax, rangeMode, visibleMin, visibleMax,
                  detector, detectorTag, geometryChoice,
                  recoSelection, recoOptions, truthSelection, truthOptions,
-                 linked, watermarks) {
+                 linked, exportLabels) {
             const plotly = (renderer || []).includes('plotly');
             const sceneLabel = plotly ? 'Save HTML' : 'Save GIF';
             const sceneTitle = plotly
@@ -1447,6 +1447,9 @@ def register_callbacks(app):
                 version: window.spinalTapShare?.version || 1,
                 file: loadedEvent.file_path,
                 entry: loadedEvent.entry,
+                run: loadedEvent.run,
+                subrun: loadedEvent.subrun,
+                event: loadedEvent.event,
                 renderer: plotly ? 'plotly' : 'webgl',
                 display: {
                     run_mode: mode,
@@ -1474,7 +1477,7 @@ def register_callbacks(app):
                 },
                 geometry: geometry,
                 branding: {
-                    watermarks: watermarks || ['spine'],
+                    labels: exportLabels || ['spine', 'entry'],
                     detector: detector || null
                 },
                 objects: {
@@ -1524,7 +1527,7 @@ def register_callbacks(app):
         Input("dropdown-truth-filter", "value"),
         Input("dropdown-truth-filter", "options"),
         Input("store-link-filters", "data"),
-        Input("checklist-export-watermarks", "value"),
+        Input("checklist-export-labels", "value"),
     )
 
     app.clientside_callback(
@@ -1849,8 +1852,10 @@ def register_callbacks(app):
             setProps('input-visible-max', {
                 value: appearance.visible_max ?? null
             });
-            setProps('checklist-export-watermarks', {
-                value: pending.branding?.watermarks || ['spine']
+            setProps('checklist-export-labels', {
+                value: pending.branding?.labels
+                    || pending.branding?.watermarks
+                    || ['spine', 'entry']
             });
 
             if (geometry.mode === 'manual') {

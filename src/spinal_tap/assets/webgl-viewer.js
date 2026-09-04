@@ -801,7 +801,11 @@
             );
         }
 
-        async saveImage(filename = "spinal_tap_event_display.png", overlay = null) {
+        async saveImage(
+            filename = "spinal_tap_event_display.png",
+            overlay = null,
+            reserveLabelRow = false
+        ) {
             this.draw();
             const output = document.createElement("canvas");
             output.width = this.canvas.width;
@@ -809,7 +813,9 @@
             const context = output.getContext("2d");
             if (!context) throw new Error("Could not create the export canvas.");
             context.drawImage(this.canvas, 0, 0);
-            await this.drawGifOverlay(context, output.width, output.height);
+            await this.drawGifOverlay(
+                context, output.width, output.height, reserveLabelRow
+            );
             if (overlay) await overlay(context, output.width, output.height);
             const link = document.createElement("a");
             link.download = filename;
@@ -817,7 +823,7 @@
             link.click();
         }
 
-        async drawGifOverlay(context, width, height) {
+        async drawGifOverlay(context, width, height, reserveLabelRow = false) {
             if (this.showAxes && this.axes.childNodes.length) {
                 const axes = this.axes.cloneNode(true);
                 axes.setAttribute("xmlns", "http://www.w3.org/2000/svg");
@@ -862,17 +868,23 @@
             }
 
             const titles = Array.from(this.titles.children);
-            if (!titles.length) return;
+            // A lone object-family title (for example, "Particles") merely
+            // repeats the active control. Dual-view titles carry the useful
+            // reconstructed/truth distinction and remain in exports.
+            if (titles.length < 2) return;
             const scale = width / Math.max(1, this.root.clientWidth);
             context.fillStyle = this.dark ? "#f3f4f6" : "#17191d";
             context.font = `800 ${Math.max(9, 13 * scale)}px system-ui`;
             context.textAlign = "center";
             context.textBaseline = "top";
+            const labelOffset = reserveLabelRow
+                ? Math.max(11, Math.min(width, height) * 0.022) * 1.35
+                : 0;
             titles.forEach((title, index) => {
                 context.fillText(
                     title.textContent,
                     width * (index + 0.5) / titles.length,
-                    Math.max(8, 12 * scale)
+                    Math.max(8, 12 * scale) + labelOffset
                 );
             });
         }
@@ -880,7 +892,8 @@
         async saveGif(
             progress = () => {},
             filename = "spinal_tap_event_display.gif",
-            overlay = null
+            overlay = null,
+            reserveLabelRow = false
         ) {
             if (!window.spinalTapGif?.Encoder) {
                 throw new Error("The GIF encoder is not available.");
@@ -917,7 +930,9 @@
                     ));
                     this.draw();
                     context.drawImage(this.canvas, 0, 0, width, height);
-                    await this.drawGifOverlay(context, width, height);
+                    await this.drawGifOverlay(
+                        context, width, height, reserveLabelRow
+                    );
                     if (overlay) await overlay(context, width, height);
                     encoder.addFrame(
                         context.getImageData(0, 0, width, height).data

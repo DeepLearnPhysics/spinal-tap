@@ -2349,7 +2349,7 @@ body.scene-loading .log-alert-icon::after {
   right: 0;
   bottom: calc(100% + 7px);
   z-index: 40;
-  width: 170px;
+  width: 185px;
   border: 1px solid var(--line-strong);
   border-radius: 7px;
   padding: 10px;

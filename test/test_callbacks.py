@@ -753,6 +753,11 @@ def test_application_serves_webgl_asset_and_callback_graph():
     assert b"downloadJson" in share_asset.data
     assert b"exportBaseName" in share_asset.data
     assert b"function sourceStem(source)" in share_asset.data
+    assert b"function sourceName(source)" in share_asset.data
+    assert b"function exportLabelText(state)" in share_asset.data
+    assert b"function hasExportViewTitles(state)" in share_asset.data
+    assert b"plotlyLabelAnnotations(state)" in share_asset.data
+    assert b"function plotlyExportAnnotations(graph, state)" in share_asset.data
     assert b".slice(0, 48)" in share_asset.data
     assert b"resetView" in share_asset.data
     assert b"saveImage" in share_asset.data
@@ -777,10 +782,10 @@ def test_application_serves_webgl_asset_and_callback_graph():
     assert b'name.includes("ndlar")' not in share_asset.data
     assert b"`${exportBaseName(state)}.html`" in share_asset.data
     assert b"`${exportBaseName(payload)}.json`" in share_asset.data
-    assert b'async saveImage(filename = "spinal_tap_event_display.png"' in asset.data
-    assert (
-        b"await this.drawGifOverlay(context, output.width, output.height)" in asset.data
-    )
+    assert b'filename = "spinal_tap_event_display.png"' in asset.data
+    assert b"context, output.width, output.height, reserveLabelRow" in asset.data
+    assert b"if (titles.length < 2) return" in asset.data
+    assert b"Math.max(8, 12 * scale) + labelOffset" in asset.data
     assert b"if (overlay) await overlay" in asset.data
     assert b"async saveGif(" in asset.data
     assert b'filename = "spinal_tap_event_display.gif"' in asset.data
@@ -803,7 +808,7 @@ def test_application_serves_webgl_asset_and_callback_graph():
         if callback["output"].startswith("..store-share-state.data...")
     )
     assert {
-        "id": "checklist-export-watermarks",
+        "id": "checklist-export-labels",
         "property": "value",
     } in share_state["inputs"]
     assert {
