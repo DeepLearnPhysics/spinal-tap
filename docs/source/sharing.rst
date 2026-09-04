@@ -37,10 +37,11 @@ Images and interactive exports
      - Result
    * - Save PNG
      - Both
-     - A static image of the current scene, with optional branding.
+     - A static image of the current scene, with optional logos and labels.
    * - Save GIF
      - WebGL
-     - A smooth rotation around the geometry's up axis.
+     - A smooth rotation around the geometry's up axis and current camera
+       pivot.
    * - Save HTML
      - Plotly
      - A standalone interactive Plotly figure.
@@ -51,14 +52,24 @@ Images and interactive exports
      - Both
      - A portable, human-readable view configuration.
 
-Branding
---------
+Labels
+------
 
-The **Branding** menu controls optional SPINE and detector logos in PNG and GIF
-exports. Detector branding is selected from the active geometry. Branding is
-applied only to exported media; it does not consume canvas space while the
-event is being explored.
+The **Labels** menu controls which annotations are included in PNG and GIF
+exports. The available items are the SPINE logo, detector logo, source name,
+entry number, and run/subrun/event identifiers. SPINE and the entry number are
+enabled by default. Detector branding is selected from the active geometry.
+These annotations are applied only to exported media; they do not consume
+canvas space while the event is being explored.
+
+Long source names are shortened in the rendered label, and metadata labels are
+positioned separately from reconstruction/truth view titles. Label selections
+are retained in share links and view JSON.
 
 Use the SPINE watermark when the image represents SPINE reconstruction output.
 Detector logos are useful for talks and notes, but should not imply an official
 experiment result without the collaboration's normal approval.
+
+For WebGL GIFs, select a rendered point, endpoint, direction, or vertex and use
+**Center here** in the inspector before saving to rotate around that feature.
+Without a selected pivot, the export uses the normal scene center.

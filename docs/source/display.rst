@@ -60,17 +60,28 @@ SPINE geometry metadata also specifies the detector's up direction. Horizontal
 drift detectors normally use ``y`` as up, while supported vertical-drift
 detectors use ``x``.
 
-Hover and object inspection
----------------------------
+Hover, feature inspection, and camera pivots
+---------------------------------------------
 
 Choose fields in **Attributes** to add them to hover information, and select one
 compatible scalar or categorical field for color. Per-point fields such as
 depositions update with the exact point under the cursor.
 
-Click an object to open the inspector. In **Both** mode, the inspector also
-identifies direct matches on the opposite side. **Show only** isolates the
-selected object and its immediate matches; selecting it again restores the
-previous visibility set.
+Click an object point, endpoint, direction, or interaction vertex to open the
+inspector in either renderer. A **Selected feature** section identifies the
+exact feature and reports its coordinates or direction vector, followed by the
+owning object's attributes. In **Both** mode, the inspector also identifies
+direct matches on the opposite side.
+
+**Show only** isolates the owning object and its immediate matches; selecting
+it again restores the previous visibility set. If the selected feature belongs
+to a different object family, such as an interaction vertex while particles
+are active, switch to that family before isolating it.
+
+In WebGL, **Center here** makes the selected feature position the camera target
+and the pivot for subsequent rotating GIF exports. For a direction, the origin
+of the vector is used. Plotly supports the same inspection details, but its
+camera target cannot currently be reassigned from the inspector.
 
 Keyboard shortcuts
 ------------------

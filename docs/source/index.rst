@@ -66,11 +66,12 @@ Choosing a renderer
      - Strengths
      - Renderer-specific exports
    * - WebGL
-     - Fast interaction with large scenes, responsive filtering, object
-       inspection, and synchronized split views.
+     - Fast interaction with large scenes, responsive filtering, selectable
+       camera pivots, and synchronized split views.
      - Rotating GIF.
    * - Plotly
-     - Familiar Plotly controls and a portable interactive figure.
+     - Familiar Plotly controls, feature inspection, and a portable interactive
+       figure.
      - Standalone HTML.
 
 PNG, share links, and view JSON are available from either renderer. Switch

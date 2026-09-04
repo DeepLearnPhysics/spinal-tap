@@ -6,6 +6,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-09-03
+
+### Added
+- **Feature inspection**: Inspect particle points, endpoints, directions, and interaction vertices in WebGL and Plotly while retaining the selected feature's parent-object context and match information.
+- **Camera pivots**: Center the WebGL view and subsequent GIF rotation on the selected point, endpoint, direction origin, or vertex from the object inspector.
+- **Export labels**: Choose whether PNG and GIF exports include the SPINE logo, detector logo, source name, entry number, and run/subrun/event identifiers.
+
+### Changed
+- **Object isolation**: Keep feature selections attached to their owning object so **Show only** remains reversible and includes one-hop reconstruction/truth matches in **Both** mode.
+- **Export layout**: Place scene titles independently from optional source and event labels to prevent long source names from colliding with split-view headings.
+
+### Fixed
+- **Plotly directions**: Render direction-vector layers without requiring point-cloud object offsets, and attach feature metadata to Plotly markers, shafts, and cone heads for click inspection.
+
 ## [1.0.3] - 2026-08-27
 
 ### Added
