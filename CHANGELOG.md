@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-12
+
+### Changed
+- **SPINE integration**: Require SPINE v1.2.1 and infer the GENIE interaction scheme for legacy 2x2, ND-LAr, and FSD truth interactions when the file does not provide one.
+
+### Fixed
+- **Physics labels**: Display scheme-dependent interaction modes and types, and PDG particle codes, using their categorical names in the object inspector.
+
 ## [1.1.0] - 2026-09-03
 
 ### Added
