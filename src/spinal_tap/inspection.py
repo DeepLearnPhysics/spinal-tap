@@ -207,6 +207,14 @@ def _format_value(value: Any, enum_values: dict[int, str] | None = None) -> str:
     return f"{array.shape[0]} values"
 
 
+def _format_labeled_value(value: Any, label: str | None) -> str:
+    """Format a scalar with a dynamically resolved categorical label."""
+    if label is None:
+        return _format_value(value)
+
+    return f"{label.replace('_', ' ')} ({_format_value(value)})"
+
+
 def _label(name: str) -> str:
     """Turn a Python attribute name into a compact human-readable label."""
     return name.replace("_", " ").capitalize()
@@ -250,6 +258,7 @@ def inspect_object(obj: Any, prefix: str, family: str, position: int) -> dict:
     """
     values = obj.as_dict() if hasattr(obj, "as_dict") else vars(obj)
     enum_values = getattr(obj, "enum_values", {})
+    resolve_label = getattr(obj, "resolve_label", None)
     units = getattr(obj, "field_units", {})
     grouped = {name: [] for name in (*_GROUPS, "details")}
 
@@ -257,7 +266,13 @@ def inspect_object(obj: Any, prefix: str, family: str, position: int) -> dict:
         if name.startswith("_"):
             continue
         group = _attribute_group(obj, name)
-        text = _format_value(value, enum_values.get(name))
+        enum_mapping = enum_values.get(name)
+        if enum_mapping is not None:
+            text = _format_value(value, enum_mapping)
+        elif resolve_label is not None:
+            text = _format_labeled_value(value, resolve_label(name, value))
+        else:
+            text = _format_value(value)
         unit = units.get(name)
         if unit and text != "—":
             text = f"{text} {unit}"

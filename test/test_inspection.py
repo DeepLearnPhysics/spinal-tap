@@ -35,6 +35,33 @@ class Inspectable(SimpleNamespace):
         }
 
 
+class LabelInspectable(Inspectable):
+    """SPINE-like object exposing the unified categorical-label API."""
+
+    def as_dict(self):
+        """Return fixed-enum, dependent-enum and PDG-backed attributes."""
+        values = super().as_dict()
+        values.update(
+            {
+                "interaction_mode": 1,
+                "interaction_type": 1001,
+                "pdg_code": 13,
+                "ancestor_pdg_code": 1000010020,
+            }
+        )
+        return values
+
+    def resolve_label(self, name, value):
+        """Resolve representative labels as current SPINE objects do."""
+        return {
+            "shape": "TRACK",
+            "interaction_mode": "RES",
+            "interaction_type": "CCQE",
+            "pdg_code": "mu-",
+            "ancestor_pdg_code": "D2",
+        }.get(name)
+
+
 def test_object_collection_key_validates_selection_domains():
     """Inspection keys should name only supported output collections."""
     assert object_collection_key("truth", "particles") == "truth_particles"
@@ -109,6 +136,22 @@ def test_inspect_object_groups_and_formats_attributes():
     assert rows["calo_ke"] == "∞ MeV"
     assert rows["match_ids"] == "[7, 9]"
     assert rows["scores"] == "12 values · 0–11"
+
+
+def test_inspect_object_uses_unified_categorical_labels():
+    """Inspector labels should include dependent enums and PDG particle names."""
+    summary = inspect_object(LabelInspectable(id=5), "truth", "interactions", 3)
+
+    rows = {
+        row["name"]: row["value"]
+        for group in summary["groups"].values()
+        for row in group
+    }
+    assert rows["shape"] == "Track (1)"
+    assert rows["interaction_mode"] == "RES (1)"
+    assert rows["interaction_type"] == "CCQE (1001)"
+    assert rows["pdg_code"] == "mu- (13)"
+    assert rows["ancestor_pdg_code"] == "D2 (1000010020)"
 
 
 @pytest.mark.parametrize(

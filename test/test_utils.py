@@ -1,5 +1,7 @@
 """Tests for Spinal Tap utility functions."""
 
+import pytest
+
 from spinal_tap import app
 from spinal_tap.callbacks import validate_file_access
 from spinal_tap.utils import (
@@ -120,6 +122,51 @@ def test_initialize_reader_cache_invalidates_on_file_change(monkeypatch, tmp_pat
     third = initialize_reader(str(path))
     assert third is not first
     assert len(calls) == 2
+    clear_data_caches()
+
+
+@pytest.mark.parametrize("detector", ["2x2", "ND-LAr", "fsd"])
+def test_initialize_reader_defaults_legacy_dune_schemes(
+    monkeypatch, tmp_path, detector
+):
+    """DUNE geometries should default missing interaction schemes to GENIE."""
+    from spine.constants import NuInteractionScheme
+
+    path = tmp_path / "events.h5"
+    path.write_bytes(b"data")
+
+    class Reader:
+        cfg = {"geo": {"detector": detector}}
+        object_defaults = {}
+
+    monkeypatch.setattr("spinal_tap.utils.HDF5Reader", lambda *args, **kwargs: Reader())
+    clear_data_caches()
+    reader = initialize_reader(str(path))
+
+    expected = int(NuInteractionScheme.GENIE)
+    assert reader.object_defaults == {
+        "TruthInteraction": {"interaction_scheme": expected},
+    }
+    clear_data_caches()
+
+
+@pytest.mark.parametrize("geo", [None, {}, {"detector": "icarus"}])
+def test_initialize_reader_leaves_other_geometries_unchanged(
+    monkeypatch, tmp_path, geo
+):
+    """Readers without a recognized DUNE geometry should receive no defaults."""
+    path = tmp_path / "events.h5"
+    path.write_bytes(b"data")
+
+    class Reader:
+        cfg = {"geo": geo}
+        object_defaults = {"Neutrino": {"interaction_scheme": 0}}
+
+    monkeypatch.setattr("spinal_tap.utils.HDF5Reader", lambda *args, **kwargs: Reader())
+    clear_data_caches()
+    reader = initialize_reader(str(path))
+
+    assert reader.object_defaults == {"Neutrino": {"interaction_scheme": 0}}
     clear_data_caches()
 
 

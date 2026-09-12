@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import RLock
 from typing import Any, Dict, Iterable, Optional, Tuple
 
+from spine.constants import NuInteractionScheme
 from spine.construct import BuildManager
 from spine.io.read import HDF5Reader
 
@@ -16,8 +17,30 @@ S3DF_DATA_ROOT = "/sdf/data/neutrino"
 CONTAINER_DATA_ROOT = "/data"
 READER_CACHE_SIZE = int(os.getenv("SPINAL_TAP_READER_CACHE_SIZE", "8"))
 EVENT_CACHE_SIZE = int(os.getenv("SPINAL_TAP_EVENT_CACHE_SIZE", "2"))
+GENIE_INTERACTION_DETECTORS = frozenset({"2x2", "nd-lar", "fsd"})
 
 _CACHE_LOCK = RLock()
+
+
+def _configure_reader_object_defaults(reader: HDF5Reader) -> None:
+    """Apply provenance defaults inferred from embedded detector geometry."""
+    cfg = getattr(reader, "cfg", None) or {}
+    geo = cfg.get("geo") or {}
+    detector = geo.get("detector") or geo.get("name")
+    if not isinstance(detector, str):
+        return
+    if detector.strip().lower() not in GENIE_INTERACTION_DETECTORS:
+        return
+
+    defaults = {
+        class_name: dict(values)
+        for class_name, values in (
+            getattr(reader, "object_defaults", None) or {}
+        ).items()
+    }
+    scheme = int(NuInteractionScheme.GENIE)
+    defaults.setdefault("TruthInteraction", {}).setdefault("interaction_scheme", scheme)
+    reader.object_defaults = defaults
 
 
 def canonicalize_data_path(file_path: str) -> str:
@@ -133,7 +156,9 @@ def _initialize_reader_cached(
 ) -> HDF5Reader:
     """Construct one cached reader for an unchanged file collection."""
     keys = file_keys[0] if len(file_keys) == 1 else list(file_keys)
-    return HDF5Reader(keys, create_run_map=use_run, skip_unknown_attrs=True)
+    reader = HDF5Reader(keys, create_run_map=use_run, skip_unknown_attrs=True)
+    _configure_reader_object_defaults(reader)
+    return reader
 
 
 def resolve_source_path(source: str) -> str:
