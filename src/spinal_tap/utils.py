@@ -17,7 +17,7 @@ S3DF_DATA_ROOT = "/sdf/data/neutrino"
 CONTAINER_DATA_ROOT = "/data"
 READER_CACHE_SIZE = int(os.getenv("SPINAL_TAP_READER_CACHE_SIZE", "8"))
 EVENT_CACHE_SIZE = int(os.getenv("SPINAL_TAP_EVENT_CACHE_SIZE", "2"))
-GENIE_INTERACTION_DETECTORS = frozenset({"2x2", "nd-lar", "fsd"})
+GENIE_INTERACTION_DETECTORS = frozenset({"2x2", "2x2-single", "nd-lar", "fsd"})
 
 _CACHE_LOCK = RLock()
 

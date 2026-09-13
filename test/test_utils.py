@@ -128,7 +128,7 @@ def test_initialize_reader_cache_invalidates_on_file_change(monkeypatch, tmp_pat
     clear_data_caches()
 
 
-@pytest.mark.parametrize("detector", ["2x2", "ND-LAr", "fsd"])
+@pytest.mark.parametrize("detector", ["2x2", "2x2-single", "ND-LAr", "fsd"])
 def test_initialize_reader_defaults_legacy_dune_schemes(
     monkeypatch, tmp_path, detector
 ):
