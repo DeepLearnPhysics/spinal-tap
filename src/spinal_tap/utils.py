@@ -27,10 +27,6 @@ def _configure_reader_object_defaults(reader: HDF5Reader) -> None:
     cfg = getattr(reader, "cfg", None) or {}
     geo = cfg.get("geo") or {}
     detector = geo.get("detector") or geo.get("name")
-    if not isinstance(detector, str):
-        return
-    if detector.strip().lower() not in GENIE_INTERACTION_DETECTORS:
-        return
 
     defaults = {
         class_name: dict(values)
@@ -38,7 +34,11 @@ def _configure_reader_object_defaults(reader: HDF5Reader) -> None:
             getattr(reader, "object_defaults", None) or {}
         ).items()
     }
-    scheme = int(NuInteractionScheme.GENIE)
+    is_genie = (
+        isinstance(detector, str)
+        and detector.strip().lower() in GENIE_INTERACTION_DETECTORS
+    )
+    scheme = int(NuInteractionScheme.GENIE if is_genie else NuInteractionScheme.LARSOFT)
     defaults.setdefault("TruthInteraction", {}).setdefault("interaction_scheme", scheme)
     reader.object_defaults = defaults
 

@@ -106,8 +106,11 @@ def test_initialize_reader_cache_invalidates_on_file_change(monkeypatch, tmp_pat
     path.write_bytes(b"first")
     calls = []
 
+    class Reader:
+        pass
+
     def make_reader(*args, **kwargs):
-        reader = object()
+        reader = Reader()
         calls.append((args, kwargs, reader))
         return reader
 
@@ -151,10 +154,12 @@ def test_initialize_reader_defaults_legacy_dune_schemes(
 
 
 @pytest.mark.parametrize("geo", [None, {}, {"detector": "icarus"}])
-def test_initialize_reader_leaves_other_geometries_unchanged(
+def test_initialize_reader_defaults_other_schemes_to_larsoft(
     monkeypatch, tmp_path, geo
 ):
-    """Readers without a recognized DUNE geometry should receive no defaults."""
+    """Other geometries should default missing interaction schemes to LArSoft."""
+    from spine.constants import NuInteractionScheme
+
     path = tmp_path / "events.h5"
     path.write_bytes(b"data")
 
@@ -166,7 +171,34 @@ def test_initialize_reader_leaves_other_geometries_unchanged(
     clear_data_caches()
     reader = initialize_reader(str(path))
 
-    assert reader.object_defaults == {"Neutrino": {"interaction_scheme": 0}}
+    expected = int(NuInteractionScheme.LARSOFT)
+    assert reader.object_defaults == {
+        "Neutrino": {"interaction_scheme": 0},
+        "TruthInteraction": {"interaction_scheme": expected},
+    }
+    clear_data_caches()
+
+
+def test_initialize_reader_preserves_explicit_scheme_default(monkeypatch, tmp_path):
+    """An existing interaction-scheme default should not be replaced."""
+    from spine.constants import NuInteractionScheme
+
+    path = tmp_path / "events.h5"
+    path.write_bytes(b"data")
+
+    expected = int(NuInteractionScheme.GENIE)
+
+    class Reader:
+        cfg = {"geo": {"detector": "icarus"}}
+        object_defaults = {"TruthInteraction": {"interaction_scheme": expected}}
+
+    monkeypatch.setattr("spinal_tap.utils.HDF5Reader", lambda *args, **kwargs: Reader())
+    clear_data_caches()
+    reader = initialize_reader(str(path))
+
+    assert reader.object_defaults == {
+        "TruthInteraction": {"interaction_scheme": expected}
+    }
     clear_data_caches()
 
 
