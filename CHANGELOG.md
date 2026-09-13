@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-09-12
+
 ### Fixed
 - **Interaction scheme defaults**: Default legacy truth interactions to GENIE for 2x2, 2x2-single, ND-LAr, and FSD geometries and to LArSoft for all other geometries, while preserving schemes supplied by the file.
 
