@@ -1,6 +1,7 @@
 """Defines the callbacks of the Spinal Tap application."""
 
 import json
+import os
 import uuid
 from dataclasses import replace
 from pathlib import Path
@@ -70,6 +71,7 @@ EVENT_NAVIGATION_TRIGGERS = {
 }
 NAVIGATION_TRIGGERS = SOURCE_OPEN_TRIGGERS | EVENT_NAVIGATION_TRIGGERS
 FILTER_RESET_TRIGGERS = NAVIGATION_TRIGGERS | {
+    "dropdown-larcv-config",
     "radio-object-mode",
     "radio-run-mode",
     "store-share-pending",
@@ -2969,6 +2971,63 @@ def register_callbacks(app):
 
     @app.callback(
         [
+            Output("store-larcv-request", "data"),
+            Output("larcv-converter-row", "hidden"),
+            Output("dropdown-larcv-config", "value"),
+        ],
+        [
+            Input("button-load", "n_clicks"),
+            Input("store-source-request", "data"),
+            Input("input-file-path", "n_submit"),
+        ],
+        [
+            State("input-file-path", "value"),
+            State("source-mode", "value"),
+            State("dropdown-larcv-config", "options"),
+        ],
+        prevent_initial_call=True,
+    )
+    def request_larcv_converter(
+        n_clicks_load,
+        source_request,
+        n_submit_source,
+        file_path,
+        source_mode,
+        converter_options,
+    ):
+        """Reveal converter selection only after opening a LArCV ROOT source."""
+        del n_clicks_load, n_submit_source
+
+        if ctx.triggered_id == "store-source-request":
+            if not source_request:
+                return None, True, None
+            file_path = source_request.get("file_path")
+            source_mode = source_request.get("source_mode", source_mode)
+
+        if not file_path or not converter_options:
+            return None, True, None
+
+        try:
+            source_kind, _ = classify_source(file_path)
+        except (OSError, ValueError):
+            # The graph callback owns user-visible source errors.
+            return None, True, None
+
+        if source_kind != "larcv" or os.getenv("SPINAL_TAP_LARCV_CONFIG"):
+            return None, True, None
+
+        return (
+            {
+                "file_path": file_path,
+                "source_mode": source_mode,
+                "revision": uuid.uuid4().hex,
+            },
+            False,
+            None,
+        )
+
+    @app.callback(
+        [
             Output("div-evd", "children"),
             Output("input-entry", "value"),
             Output("input-run", "value"),
@@ -3013,12 +3072,13 @@ def register_callbacks(app):
             Input("radio-crt-mode", "value"),
             Input("checklist-draw-mode-2", "value"),
             Input("store-share-pending", "data"),
+            Input("dropdown-larcv-config", "value"),
         ],
         [
             State("store-object-filter", "data"),
             State("input-file-path", "value"),
-            State("dropdown-larcv-config", "value"),
             State("source-mode", "value"),
+            State("store-larcv-request", "data"),
             State("input-entry", "value"),
             State("input-run", "value"),
             State("input-subrun", "value"),
@@ -3071,10 +3131,11 @@ def register_callbacks(app):
         crt_mode,
         draw_mode_2,
         share_pending,
+        larcv_converter,
         object_filter,
         file_path,
-        larcv_converter,
         source_mode,
+        larcv_request,
         entry,
         run,
         subrun,
@@ -3217,6 +3278,12 @@ def register_callbacks(app):
                 return (no_update,) * 17
             file_path = source_request.get("file_path")
             source_mode = source_request.get("source_mode", source_mode)
+
+        if trigger == "dropdown-larcv-config":
+            if not larcv_converter or not larcv_request:
+                return (no_update,) * 17
+            file_path = larcv_request.get("file_path")
+            source_mode = larcv_request.get("source_mode", source_mode)
 
         restoring_view = False
         share_request_output = no_update
@@ -3421,6 +3488,17 @@ def register_callbacks(app):
 
             if source_kind == "json":
                 return fail("A shared view cannot reference another shared view.")
+
+        # Opening raw ROOT first requests an explicit parser selection. The
+        # dropdown change re-enters this callback with the source remembered
+        # in ``store-larcv-request`` and performs the actual load.
+        if (
+            trigger in SOURCE_OPEN_TRIGGERS
+            and source_kind == "larcv"
+            and restored_state is None
+            and not os.getenv("SPINAL_TAP_LARCV_CONFIG")
+        ):
+            return (no_update,) * 17
 
         if source_kind == "manifest":
             is_valid, error_msg = validate_manifest_access(resolved_source)

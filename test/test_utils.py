@@ -420,12 +420,16 @@ def test_load_data_returns_run_metadata(monkeypatch):
     clear_data_caches()
 
 
-def test_load_data_uses_conversion_mode_for_larcv(monkeypatch):
-    """LArCV truth bundles should not build nonexistent reconstructed objects."""
+def test_load_data_builds_larcv_interactions_for_particle_vertices(monkeypatch):
+    """LArCV particle views should build interactions required by vertices."""
 
     class Reader:
         backend = "larcv"
-        cfg = {"build": {"mode": "truth"}, "geo": {"detector": "2x2"}}
+        cfg = {
+            "build": {"mode": "truth"},
+            "geo": {"detector": "2x2"},
+            "io": {"writer": {"keys": ["truth_particles", "truth_interactions"]}},
+        }
 
         def get(self, entry):
             return {"index": entry}
@@ -443,7 +447,7 @@ def test_load_data_uses_conversion_mode_for_larcv(monkeypatch):
     monkeypatch.setattr("spinal_tap.utils.BuildManager", Builder)
     load_data(Reader(), 0, "both", "particles")
 
-    assert calls == [((False, True, False), {"mode": "truth"})]
+    assert calls == [((False, True, True), {"mode": "truth"})]
     clear_data_caches()
 
 

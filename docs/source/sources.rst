@@ -45,10 +45,12 @@ Spinal Tap identifies exact files by content rather than extension. It accepts:
 LArCV conversion bundles
 ------------------------
 
-LArCV tree names and detector geometry are producer-specific. Before opening a
-ROOT source, select the matching dated bundle under **LArCV converter**. Spinal
-Tap then parses and builds the SPINE truth representation in memory; it does
-not write an intermediate HDF5 file. A manifest may contain several LArCV
+LArCV tree names and detector geometry are producer-specific. Open a ROOT
+source first; after Spinal Tap detects its content, it reveals **LArCV
+converter** and waits for a matching dated bundle. Selecting the bundle resumes
+the load automatically. The control stays hidden for other source types.
+Spinal Tap then parses and builds the SPINE truth representation in memory; it
+does not write an intermediate HDF5 file. A manifest may contain several LArCV
 files that use the same bundle, but it cannot mix LArCV and HDF5 files.
 
 Detector conversion knowledge is maintained in ``spine-prod`` and copied into

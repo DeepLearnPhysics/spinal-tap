@@ -444,10 +444,14 @@ def _load_data(reader: HDF5Reader, entry: int, mode: str, obj: str) -> Tuple[
     if getattr(reader, "backend", None) == "larcv":
         build_mode = reader.cfg.get("build", {}).get("mode", mode)
 
+    is_larcv = getattr(reader, "backend", None) == "larcv"
+    build_interactions = obj == "interactions" or (
+        is_larcv and "truth_interactions" in get_reader_products(reader)
+    )
     builder = BuildManager(
         obj == "fragments",
         obj in ["particles", "interactions"],
-        obj == "interactions",
+        build_interactions,
         mode=build_mode,
     )
 

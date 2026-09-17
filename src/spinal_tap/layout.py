@@ -247,7 +247,7 @@ def entry_controls():
                 ],
                 id="larcv-converter-row",
                 className="control-field",
-                hidden=not converter_options,
+                hidden=True,
             ),
             html.Div(
                 [
@@ -1317,6 +1317,7 @@ def main_layout():
                     dcc.Store(id="store-loaded-event"),
                     dcc.Store(id="store-source-memory"),
                     dcc.Store(id="store-source-request"),
+                    dcc.Store(id="store-larcv-request"),
                     dcc.Store(id="store-dropdown-commit"),
                     dcc.Store(id="store-dropdown-pending"),
                     dcc.Store(id="store-attribute-options"),

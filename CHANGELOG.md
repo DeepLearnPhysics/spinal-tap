@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 - **Docker layout**: Keep both image definitions, the local run helper, and container-build documentation under `docker/`.
+- **Contextual LArCV configuration**: Request a detector converter only after opening a detected ROOT source, leaving the control hidden for other source types.
+
+### Fixed
+- **Particle vertices from LArCV**: Build truth interactions alongside particles so the interaction-vertex overlay works in particle mode.
 
 ## [1.1.2] - 2026-09-12
 

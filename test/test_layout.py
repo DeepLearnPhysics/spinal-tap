@@ -195,6 +195,7 @@ def test_layout_contains_refresh_state_stores():
     assert component_by_id(layout, "store-loaded-event") is not None
     assert component_by_id(layout, "store-source-memory") is not None
     assert component_by_id(layout, "store-source-request") is not None
+    assert component_by_id(layout, "store-larcv-request") is not None
     assert component_by_id(layout, "store-dropdown-commit") is not None
     assert component_by_id(layout, "store-dropdown-pending") is not None
     assert component_by_id(layout, "store-attribute-options") is not None
@@ -278,6 +279,7 @@ def test_local_data_controls_use_native_file_picker():
         == "Choose an HDF5, LArCV ROOT, manifest, or view file…"
     )
     assert component_by_id(controls, "dropdown-larcv-config") is not None
+    assert component_by_id(controls, "larcv-converter-row").hidden is True
     assert component_by_id(controls, "button-browse-source") is None
     assert component_by_id(controls, "button-source") is None
 
