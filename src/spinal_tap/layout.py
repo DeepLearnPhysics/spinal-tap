@@ -227,27 +227,30 @@ def entry_controls():
                         className="primary-button source-open-button",
                     ),
                     html.Div(
+                        [
+                            html.Label(
+                                "Choose LArCV converter",
+                                className="field-label",
+                            ),
+                            dcc.Dropdown(
+                                id="dropdown-larcv-config",
+                                options=converter_options,
+                                value=None,
+                                clearable=True,
+                                placeholder="Detector conversion bundle…",
+                                className="control-dropdown",
+                            ),
+                        ],
+                        id="larcv-converter-row",
+                        className="larcv-converter-popover",
+                        hidden=True,
+                    ),
+                    html.Div(
                         id="source-open-summary",
                         className="source-open-summary",
                     ),
                 ],
                 className="source-action-row",
-            ),
-            html.Div(
-                [
-                    html.Label("LArCV converter", className="field-label"),
-                    dcc.Dropdown(
-                        id="dropdown-larcv-config",
-                        options=converter_options,
-                        value=None,
-                        clearable=True,
-                        placeholder="Select detector conversion bundle…",
-                        className="control-dropdown",
-                    ),
-                ],
-                id="larcv-converter-row",
-                className="control-field",
-                hidden=True,
             ),
             html.Div(
                 [

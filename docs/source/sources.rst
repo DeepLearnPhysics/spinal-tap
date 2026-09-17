@@ -47,8 +47,9 @@ LArCV conversion bundles
 
 LArCV tree names and detector geometry are producer-specific. Open a ROOT
 source first; after Spinal Tap detects its content, it reveals **LArCV
-converter** and waits for a matching dated bundle. Selecting the bundle resumes
-the load automatically. The control stays hidden for other source types.
+converter** beneath the Open button and waits for a matching dated bundle.
+Selecting the bundle resumes the load automatically and dismisses the chooser.
+The control stays hidden for other source types.
 Spinal Tap then parses and builds the SPINE truth representation in memory; it
 does not write an intermediate HDF5 file. A manifest may contain several LArCV
 files that use the same bundle, but it cannot mix LArCV and HDF5 files.

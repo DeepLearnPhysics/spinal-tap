@@ -857,6 +857,7 @@ html[data-spinal-tap-theme="dark"] body .Select-control * {
 }
 
 .source-action-row {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
@@ -943,6 +944,42 @@ html[data-spinal-tap-theme="dark"] body .Select-control * {
 .source-open-button {
   width: 64px;
   min-width: 64px;
+}
+
+.larcv-converter-popover {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 7px);
+  right: 0;
+  width: min(360px, 100%);
+  padding: 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  background: var(--panel);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.larcv-converter-popover::before {
+  position: absolute;
+  top: -6px;
+  right: 25px;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid var(--line-strong);
+  border-left: 1px solid var(--line-strong);
+  background: var(--panel);
+  content: "";
+  transform: rotate(45deg);
+}
+
+.larcv-converter-popover .field-label {
+  margin-bottom: 6px;
+}
+
+/* A converter selection immediately resumes the pending Open action. Hide the
+   completed prompt; pressing Open on a ROOT source clears it before reopening. */
+.larcv-converter-popover:has(.Select-value) {
+  display: none;
 }
 
 .source-open-summary {

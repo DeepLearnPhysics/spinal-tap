@@ -279,7 +279,9 @@ def test_local_data_controls_use_native_file_picker():
         == "Choose an HDF5, LArCV ROOT, manifest, or view file…"
     )
     assert component_by_id(controls, "dropdown-larcv-config") is not None
-    assert component_by_id(controls, "larcv-converter-row").hidden is True
+    converter = component_by_id(controls, "larcv-converter-row")
+    assert converter.hidden is True
+    assert converter.className == "larcv-converter-popover"
     assert component_by_id(controls, "button-browse-source") is None
     assert component_by_id(controls, "button-source") is None
 
