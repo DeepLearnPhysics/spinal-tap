@@ -182,6 +182,10 @@ def validate_view_state(state):
         )
     if not isinstance(state.get("file"), str) or not state["file"]:
         raise ValueError("The view state does not contain a file path.")
+    if state.get("larcv_converter") is not None and not isinstance(
+        state["larcv_converter"], str
+    ):
+        raise ValueError("The view state contains an invalid LArCV converter.")
     try:
         entry = int(state.get("entry"))
     except (TypeError, ValueError) as error:
@@ -1356,7 +1360,9 @@ def register_callbacks(app):
 
         try:
             reader = initialize_reader(
-                loaded_event["file_path"], loaded_event.get("use_run", False)
+                loaded_event["file_path"],
+                loaded_event.get("use_run", False),
+                loaded_event.get("larcv_converter"),
             )
             data, *_ = load_data(reader, loaded_event["entry"], mode, selected_family)
             collection = data[object_collection_key(prefix, selected_family)]
@@ -1519,6 +1525,7 @@ def register_callbacks(app):
             return [{
                 version: window.spinalTapShare?.version || 1,
                 file: loadedEvent.file_path,
+                larcv_converter: loadedEvent.larcv_converter || null,
                 entry: loadedEvent.entry,
                 run: loadedEvent.run,
                 subrun: loadedEvent.subrun,
@@ -3010,6 +3017,7 @@ def register_callbacks(app):
         [
             State("store-object-filter", "data"),
             State("input-file-path", "value"),
+            State("dropdown-larcv-config", "value"),
             State("source-mode", "value"),
             State("input-entry", "value"),
             State("input-run", "value"),
@@ -3065,6 +3073,7 @@ def register_callbacks(app):
         share_pending,
         object_filter,
         file_path,
+        larcv_converter,
         source_mode,
         entry,
         run,
@@ -3141,6 +3150,8 @@ def register_callbacks(app):
             Path to the input file
         source_mode : str
             Source mode used to open the input file.
+        larcv_converter : str, optional
+            Installed spine-prod conversion bundle used for LArCV input.
         entry : int
             Entry number
         entry_prev : int
@@ -3245,6 +3256,7 @@ def register_callbacks(app):
             subrun = loaded_event.get("subrun")
             event = loaded_event.get("event")
             use_run = loaded_event.get("use_run", use_run)
+            larcv_converter = loaded_event.get("larcv_converter", larcv_converter)
 
         # Browse identifies the file used to import data or a saved view. Once
         # an event is open, navigation must follow that event's resolved HDF5
@@ -3354,6 +3366,7 @@ def register_callbacks(app):
             overlays = display_state.get("overlays") or []
 
             file_path = restored_state["file"]
+            larcv_converter = restored_state.get("larcv_converter", larcv_converter)
             entry = restored_state["entry"]
             entry_mode = "entry"
             use_run = False
@@ -3424,7 +3437,7 @@ def register_callbacks(app):
 
         else:
             try:
-                reader = initialize_reader(file_path, use_run)
+                reader = initialize_reader(file_path, use_run, larcv_converter)
                 msg = f"File(s) found with {len(reader)} entries"
             except FileNotFoundError:
                 msg = f"File(s) not found:\n{file_path}"
@@ -3762,6 +3775,9 @@ def register_callbacks(app):
                     "subrun": subrun,
                     "event": event,
                     "use_run": use_run,
+                    "larcv_converter": (
+                        larcv_converter if source_kind == "larcv" else None
+                    ),
                     "reco_filter": [
                         key for key in active_filter if key.startswith("reco:")
                     ],
@@ -3909,14 +3925,14 @@ def register_callbacks(app):
             return "", True, hidden, {"display": "grid"}, {"display": "block"}
         if mode == "url":
             return (
-                "HTTPS URL to HDF5, manifest, or view…",
+                "HTTPS URL to HDF5, LArCV ROOT, manifest, or view…",
                 False,
                 shown,
                 hidden,
                 {"display": "block"},
             )
         return (
-            "HDF5, manifest, or view path…",
+            "HDF5, LArCV ROOT, manifest, or view path…",
             False,
             shown,
             hidden,

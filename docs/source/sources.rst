@@ -38,8 +38,29 @@ Accepted source documents
 Spinal Tap identifies exact files by content rather than extension. It accepts:
 
 * SPINE HDF5 output;
+* LArCV2 ROOT input when running the LArCV container flavor;
 * a saved Spinal Tap view JSON document; or
 * a UTF-8 file manifest.
+
+LArCV conversion bundles
+------------------------
+
+LArCV tree names and detector geometry are producer-specific. Before opening a
+ROOT source, select the matching dated bundle under **LArCV converter**. Spinal
+Tap then parses and builds the SPINE truth representation in memory; it does
+not write an intermediate HDF5 file. A manifest may contain several LArCV
+files that use the same bundle, but it cannot mix LArCV and HDF5 files.
+
+Detector conversion knowledge is maintained in ``spine-prod`` and copied into
+the LArCV image at build time. Install an additional configuration tree by
+setting ``SPINAL_TAP_LARCV_CONFIG_ROOT`` (or ``SPINE_CONFIG_PATH``) to its
+``config`` directory. ``SPINAL_TAP_LARCV_CONFIG`` can set a default converter
+ID or an explicit bundle path for non-interactive deployments.
+
+Spinal Tap intentionally does not guess a detector or schema from tree names:
+different production vintages can use overlapping names with different
+semantics. If a bundle reports missing trees, select the matching vintage or
+add the required variant in ``spine-prod``.
 
 A manifest contains one source path per line. Blank lines and records beginning
 with ``#`` are ignored. Relative records are resolved beside the manifest, and

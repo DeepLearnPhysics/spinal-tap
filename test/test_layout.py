@@ -249,7 +249,7 @@ def test_layout_contains_shared_view_controls():
         "run",
     ]
     assert export.disabled is True
-    assert file_path.placeholder == "HDF5, manifest, or view path..."
+    assert file_path.placeholder == "HDF5, LArCV ROOT, manifest, or view path..."
     assert component_by_id(layout, "upload-view-state") is None
     assert component_by_id(layout, "upload-view-state-data") is None
     assert component_by_id(actions, "share-menu") is None
@@ -275,8 +275,9 @@ def test_local_data_controls_use_native_file_picker():
     assert component_by_id(controls, "upload-source-file").type == "file"
     assert (
         component_by_id(controls, "upload-source-status").children
-        == "Choose an HDF5, manifest, or view file…"
+        == "Choose an HDF5, LArCV ROOT, manifest, or view file…"
     )
+    assert component_by_id(controls, "dropdown-larcv-config") is not None
     assert component_by_id(controls, "button-browse-source") is None
     assert component_by_id(controls, "button-source") is None
 

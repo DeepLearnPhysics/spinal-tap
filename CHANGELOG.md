@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+### Added
+- **Direct LArCV input**: Load LArCV2 ROOT files through SPINE v1.2.4 using an explicitly selected, versioned detector conversion bundle from `spine-prod`.
+- **LArCV container flavor**: Publish a separate ROOT/LArCV-enabled image while retaining the existing lean image and tags as the default.
+
 ## [1.1.2] - 2026-09-12
 
 ### Fixed

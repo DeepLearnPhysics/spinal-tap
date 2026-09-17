@@ -4,6 +4,7 @@ import spine
 from dash import dcc, html
 from spine.geo.factories import geo_dict
 
+from .converters import available_larcv_converters
 from .version import __version__
 
 SPINAL_TAP_LOGO_BLACK = "/assets/spinal-tap-logo-black.png"
@@ -158,6 +159,7 @@ def entry_controls():
         value = "upload" if REQUIRE_AUTH else "browse"
         source_options.append({"label": label, "value": value})
     source_options.append({"label": "URL", "value": "url"})
+    converter_options = available_larcv_converters()
 
     return section(
         "Data",
@@ -172,7 +174,10 @@ def entry_controls():
                                         id="input-file-path",
                                         type="text",
                                         value="",
-                                        placeholder="HDF5, manifest, or view path...",
+                                        placeholder=(
+                                            "HDF5, LArCV ROOT, manifest, "
+                                            "or view path..."
+                                        ),
                                         disabled=False,
                                         required=True,
                                         autoComplete="on",
@@ -188,7 +193,7 @@ def entry_controls():
                                     html.Label(
                                         [
                                             html.Span(
-                                                "Choose an HDF5, manifest, "
+                                                "Choose an HDF5, LArCV ROOT, manifest, "
                                                 "or view file…",
                                                 id="upload-source-status",
                                                 className="source-file-name",
@@ -227,6 +232,22 @@ def entry_controls():
                     ),
                 ],
                 className="source-action-row",
+            ),
+            html.Div(
+                [
+                    html.Label("LArCV converter", className="field-label"),
+                    dcc.Dropdown(
+                        id="dropdown-larcv-config",
+                        options=converter_options,
+                        value=None,
+                        clearable=True,
+                        placeholder="Select detector conversion bundle…",
+                        className="control-dropdown",
+                    ),
+                ],
+                id="larcv-converter-row",
+                className="control-field",
+                hidden=not converter_options,
             ),
             html.Div(
                 [

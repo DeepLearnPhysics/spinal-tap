@@ -20,12 +20,18 @@ def read_file_manifest(file_path: str | Path) -> list[str]:
 
 
 def detect_source_file(file_path: str | Path) -> str:
-    """Identify an exact local file as HDF5, JSON, or a path manifest."""
+    """Identify an exact local file as HDF5, LArCV ROOT, JSON, or a manifest."""
     import h5py
 
     file_path = Path(file_path)
     if h5py.is_hdf5(file_path):
         return "hdf5"
+
+    # ROOT files start with the literal ``root`` magic. Content detection keeps
+    # LArCV support independent of filename conventions such as ``.root``.
+    with file_path.open("rb") as source:
+        if source.read(4) == b"root":
+            return "larcv"
 
     try:
         with open(file_path, encoding="utf-8-sig") as source:
@@ -36,5 +42,5 @@ def detect_source_file(file_path: str | Path) -> str:
         return "manifest"
     except UnicodeDecodeError as error:
         raise ValueError(
-            "The source is not HDF5, JSON, or a UTF-8 file manifest."
+            "The source is not HDF5, LArCV ROOT, JSON, or a UTF-8 file manifest."
         ) from error

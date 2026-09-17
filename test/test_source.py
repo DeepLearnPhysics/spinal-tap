@@ -29,7 +29,7 @@ def test_read_manifest_rejects_empty_and_binary_files(tmp_path):
 
 
 def test_detect_source_file_by_content(tmp_path):
-    """HDF5, JSON and manifest sources should not depend on suffixes."""
+    """HDF5, ROOT, JSON and manifest sources should not depend on suffixes."""
     hdf5_path = tmp_path / "hdf5.data"
     with h5py.File(hdf5_path, "w") as output:
         output.create_dataset("events", data=[0])
@@ -37,12 +37,15 @@ def test_detect_source_file_by_content(tmp_path):
     json_path.write_text(json.dumps({"version": 1}))
     manifest_path = tmp_path / "manifest.data"
     manifest_path.write_text("events.h5\n")
+    root_path = tmp_path / "larcv.data"
+    root_path.write_bytes(b"root" + bytes(32))
 
     assert detect_source_file(hdf5_path) == "hdf5"
+    assert detect_source_file(root_path) == "larcv"
     assert detect_source_file(json_path) == "json"
     assert detect_source_file(manifest_path) == "manifest"
 
     invalid = tmp_path / "invalid.data"
     invalid.write_bytes(b"\xff\xfe")
-    with pytest.raises(ValueError, match="not HDF5, JSON"):
+    with pytest.raises(ValueError, match="not HDF5, LArCV ROOT, JSON"):
         detect_source_file(invalid)

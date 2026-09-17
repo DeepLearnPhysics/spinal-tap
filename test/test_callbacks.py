@@ -972,6 +972,15 @@ def test_view_state_is_validated_and_gets_a_restore_revision(tmp_path):
                 "version": 1,
                 "file": "/data/a.h5",
                 "entry": 0,
+                "larcv_converter": ["2x2/truth"],
+            },
+            "LArCV converter",
+        ),
+        (
+            {
+                "version": 1,
+                "file": "/data/a.h5",
+                "entry": 0,
                 "objects": {"reco": "not-all"},
             },
             "object selection",
@@ -1144,6 +1153,7 @@ def test_scene_refresh_inputs_use_committed_multi_selects():
 
     assert ("store-dropdown-commit", "data") in inputs
     assert ("input-file-path", "n_submit") in inputs
+    assert ("dropdown-larcv-config", "value") in states
     for field in ("input-entry", "input-run", "input-subrun", "input-event"):
         assert (field, "n_submit") in inputs
     assert ("radio-run-mode", "value") in inputs
@@ -1452,6 +1462,7 @@ def graph_arguments(**overrides):
         "draw_mode_2": ["split_scene", "sync"],
         "axes": ["axes"],
         "file_path": "/tmp/events.h5",
+        "larcv_converter": None,
         "source_mode": "path",
         "entry": 0,
         "run": None,

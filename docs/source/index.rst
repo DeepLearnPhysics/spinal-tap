@@ -11,7 +11,7 @@ one browser application.
 
 The application is intended for three common workflows:
 
-* inspect a SPINE HDF5 file on the same machine as the server;
+* inspect a SPINE HDF5 file, or a LArCV ROOT file with the optional container;
 * share a reproducible event view with another collaborator; and
 * deploy a controlled, authenticated display beside experiment data.
 
@@ -52,8 +52,9 @@ Install and launch Spinal Tap:
    spinal-tap
 
 Open ``http://localhost:8888``, enter an HDF5 path in **Path**, select **Open**,
-and navigate with **Go** or the left/right arrows. See :doc:`sources` for
-manifests, uploads, URLs, and shared view JSON files.
+and navigate with **Go** or the left/right arrows. The optional LArCV image can
+open ROOT input after selecting its detector conversion bundle. See
+:doc:`sources` for manifests, uploads, URLs, and shared view JSON files.
 
 Choosing a renderer
 -------------------
