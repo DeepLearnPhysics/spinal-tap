@@ -6,9 +6,11 @@ set -e
 IMAGE_NAME="spinal-tap"
 IMAGE_TAG="local"
 PORT=8888
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "🔨 Building Docker image..."
-docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+docker build -f "${REPO_ROOT}/docker/Dockerfile" \
+  -t "${IMAGE_NAME}:${IMAGE_TAG}" "${REPO_ROOT}"
 
 echo "✅ Build complete!"
 echo ""
@@ -18,6 +20,6 @@ echo "🛑 Press Ctrl+C to stop"
 echo ""
 
 docker run --rm -it \
-  -p ${PORT}:${PORT} \
+  -p "${PORT}:${PORT}" \
   --name spinal-tap-dev \
-  ${IMAGE_NAME}:${IMAGE_TAG}
+  "${IMAGE_NAME}:${IMAGE_TAG}"

@@ -1,5 +1,23 @@
 # Docker Image Build Strategy
 
+## Repository Layout
+
+All container-specific build files live in this directory:
+
+- `Dockerfile` builds the lean SPINE HDF5 viewer.
+- `Dockerfile.larcv` builds the optional ROOT/LArCV flavor.
+- `run.sh` builds and starts the lean image for local development.
+
+Both Dockerfiles use the repository root as their build context:
+
+```bash
+docker build -f docker/Dockerfile -t spinal-tap:local .
+docker build -f docker/Dockerfile.larcv -t spinal-tap:larcv-local .
+```
+
+The shared `.dockerignore` remains at the repository root because Docker reads
+it from the build-context root, not from the Dockerfile directory.
+
 ## Build Triggers
 
 The Docker image is built and published **only when**:
@@ -61,8 +79,8 @@ The workflow includes automatic cleanup:
 - ✅ For public packages: **No practical limit**
 
 ### Image Size Optimization:
-The default Dockerfile uses a Python slim base and remains free of ROOT and
-LArCV. The optional multi-stage LArCV Dockerfile starts from the dedicated
+The lean Dockerfile uses a Python slim base and remains free of ROOT and LArCV.
+The optional multi-stage LArCV Dockerfile starts from the dedicated
 LArCV runtime image and copies only the `spine-prod` configuration tree.
 
 ## Workflow Summary

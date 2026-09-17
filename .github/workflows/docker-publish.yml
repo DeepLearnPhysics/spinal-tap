@@ -22,7 +22,7 @@ jobs:
       matrix:
         include:
           - variant: lean
-            dockerfile: Dockerfile
+            dockerfile: docker/Dockerfile
             suffix: ''
           - variant: larcv
             dockerfile: docker/Dockerfile.larcv
