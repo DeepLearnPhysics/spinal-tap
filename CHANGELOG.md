@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ### Changed
 - **Docker layout**: Keep both image definitions, the local run helper, and container-build documentation under `docker/`.
+- **Kubernetes image flavors**: Deploy the LArCV image on S3DF by default while retaining a lean-image overlay selectable with `FLAVOR=lean`.
 - **Contextual LArCV configuration**: Request a detector converter only after opening a detected ROOT source, leaving the control hidden for other source types.
 - **Source navigation**: Start newly opened files at entry 0 instead of carrying over the previous file's entry index.
 - **Unified source entry**: Accept server paths and public URLs through one Path field, using the existing status indicator for remote loading.

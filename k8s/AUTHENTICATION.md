@@ -78,7 +78,7 @@ The deployment will automatically use the secrets.
 
 Shared folders are accessible to all authenticated users, regardless of experiment. By default, `/data/generic/` and `/data/public_html/` are shared.
 
-To add more shared folders, update the `SPINAL_TAP_SHARED_FOLDERS` environment variable in `deployment.yaml`:
+To add more shared folders, update the `SPINAL_TAP_SHARED_FOLDERS` environment variable in `base/deployment.yaml`:
 
 ```yaml
 - name: SPINAL_TAP_SHARED_FOLDERS

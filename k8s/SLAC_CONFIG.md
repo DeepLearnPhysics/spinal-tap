@@ -42,18 +42,18 @@ If you need access to a filesystem path not covered by existing storageClasses:
 
 ### Adapting for Other Facilities
 
-To use a different facility, update `pvc.yaml`:
+To use a different facility, update `base/pvc.yaml`:
 
 ```yaml
 spec:
   storageClassName: sdf-data-YOUR_FACILITY  # e.g., sdf-data-lcls, sdf-data-atlas
 ```
 
-And update the `subPath` in `deployment.yaml` volumeMounts section to match your facility's directory structure.
+And update the `subPath` in `base/deployment.yaml` volumeMounts section to match your facility's directory structure.
 
 ### Mounting Storage
 
-The `pvc.yaml` defines the storage request. For the neutrino facility, it's pre-configured for read-only access:
+The `base/pvc.yaml` file defines the storage request. For the neutrino facility, it's pre-configured for read-only access:
 
 ```yaml
 spec:
@@ -147,7 +147,7 @@ You can designate folders that all authenticated users can access, regardless of
 - Documentation
 - Tutorial/example files
 
-**Configure shared folders** in `deployment.yaml`:
+**Configure shared folders** in `base/deployment.yaml`:
 
 ```yaml
 env:
@@ -188,7 +188,7 @@ https://spinal-tap.slac.stanford.edu
 
 ### Custom Subdomain
 
-To use a different subdomain, update `k8s/ingress.yaml`:
+To use a different subdomain, update `k8s/base/ingress.yaml`:
 
 ```yaml
 spec:
@@ -204,11 +204,11 @@ HTTPS is automatically configured by S3DF ingress controller. No additional cert
 
 ## Namespace
 
-By default, resources are deployed in the `spinal-tap` namespace (defined in `kustomization.yaml`).
+By default, resources are deployed in the `spinal-tap` namespace (defined in `base/kustomization.yaml`).
 
 ### Using a Different Namespace
 
-1. Edit `k8s/kustomization.yaml`:
+1. Edit `k8s/base/kustomization.yaml`:
 ```yaml
 namespace: my-namespace  # ← Change this
 ```
@@ -224,7 +224,7 @@ kubectl create namespace my-namespace
 
 ### Default Configuration
 
-Current defaults in `deployment.yaml`:
+Current defaults in `base/deployment.yaml`:
 
 ```yaml
 resources:

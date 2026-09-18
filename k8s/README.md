@@ -2,6 +2,36 @@
 
 This directory contains Kubernetes manifests for deploying Spinal Tap on SLAC's S3DF Kubernetes infrastructure.
 
+## Container image selection
+
+Every Spinal Tap release publishes two images to GHCR:
+
+- `ghcr.io/deeplearnphysics/spinal-tap:<version>` (and `latest`) is the lean image.
+- `ghcr.io/deeplearnphysics/spinal-tap:<version>-larcv` (and `larcv`) includes the
+  LArCV runtime and can open ROOT/LArCV files directly.
+
+Publishing and deployment are independent: the release workflow always publishes
+both images, while the selected Kustomize overlay determines which image Kubernetes
+runs. S3DF defaults to the LArCV image:
+
+```bash
+make dump                 # renders overlays/larcv
+make apply                # deploys the moving :larcv tag
+make apply FLAVOR=lean    # deploys the moving :latest tag instead
+```
+
+For a reproducible production deployment, pin `newTag` in the selected overlay:
+
+```yaml
+# overlays/larcv/kustomization.yaml
+images:
+- name: ghcr.io/deeplearnphysics/spinal-tap
+  newTag: 1.2.0-larcv
+```
+
+The corresponding lean release tag is `1.2.0`. Changing an overlay selects what is
+deployed; it does not change what the GitHub release publishes.
+
 ## Prerequisites
 
 ### 1. Access SLAC S3DF
@@ -165,17 +195,20 @@ Alternatively, use kubectl directly:
 
 ```bash
 # Apply all resources
-kubectl apply -k .
+kubectl apply -k overlays/larcv
 
 # Preview changes
-kubectl kustomize .
+kubectl kustomize overlays/larcv
+
+# Use the lean image instead
+kubectl apply -k overlays/lean
 ```
 
 ## Configuration
 
 ### Replicas
 
-The deployment defaults to `replicas: 1` in `deployment.yaml`. 
+The deployment defaults to `replicas: 1` in `base/deployment.yaml`.
 
 **When to scale:**
 - **1 replica**: Development, low traffic (< 10 concurrent users)
@@ -184,7 +217,7 @@ The deployment defaults to `replicas: 1` in `deployment.yaml`.
 
 **Scale the deployment:**
 ```bash
-# Edit deployment.yaml and change replicas, then:
+# Edit base/deployment.yaml and change replicas, then:
 make apply
 
 # Or scale directly:
@@ -195,7 +228,7 @@ kubectl scale deployment spinal-tap -n spinal-tap --replicas=3
 
 ### Resource Limits
 
-Current defaults in `deployment.yaml`:
+Current defaults in `base/deployment.yaml`:
 
 ```yaml
 resources:
@@ -212,7 +245,7 @@ Adjust based on your needs. Monitor usage with:
 kubectl top pod -n spinal-tap
 ```
 
-If pods are OOMKilled, increase memory limits in `deployment.yaml` and reapply.
+If pods are OOMKilled, increase memory limits in `base/deployment.yaml` and reapply.
 
 **For detailed resource tuning guidance**, see [SLAC_CONFIG.md](SLAC_CONFIG.md#resource-limits).
 
@@ -353,7 +386,7 @@ make delete
 Or:
 
 ```bash
-kubectl delete -k .
+kubectl delete -k overlays/larcv
 ```
 
 ## Support
