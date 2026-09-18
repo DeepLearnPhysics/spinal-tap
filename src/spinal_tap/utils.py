@@ -513,9 +513,10 @@ def _load_data(reader: HDF5Reader, entry: int, mode: str, obj: str) -> Tuple[
     build_interactions = obj == "interactions" or (
         is_larcv and "truth_interactions" in get_reader_products(reader)
     )
+    build_particles = obj in ["particles", "interactions"] or build_interactions
     builder = BuildManager(
         obj == "fragments",
-        obj in ["particles", "interactions"],
+        build_particles,
         build_interactions,
         mode=build_mode,
     )

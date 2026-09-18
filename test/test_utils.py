@@ -534,6 +534,44 @@ def test_load_data_builds_larcv_interactions_for_particle_vertices(monkeypatch):
     clear_data_caches()
 
 
+def test_load_data_closes_larcv_fragment_build_dependencies(monkeypatch):
+    """LArCV fragment views should retain particle/interaction dependencies."""
+
+    class Reader:
+        backend = "larcv"
+        cfg = {
+            "build": {"mode": "truth"},
+            "io": {
+                "writer": {
+                    "keys": [
+                        "truth_fragments",
+                        "truth_particles",
+                        "truth_interactions",
+                    ]
+                }
+            },
+        }
+
+        def get(self, entry):
+            return {"index": entry}
+
+    calls = []
+
+    class Builder:
+        def __init__(self, *args, **kwargs):
+            calls.append((args, kwargs))
+
+        def __call__(self, data):
+            pass
+
+    clear_data_caches()
+    monkeypatch.setattr("spinal_tap.utils.BuildManager", Builder)
+    load_data(Reader(), 0, "truth", "fragments")
+
+    assert calls == [((True, True, True), {"mode": "truth"})]
+    clear_data_caches()
+
+
 def test_resolve_url_and_reader_source_kinds(monkeypatch, tmp_path):
     """URLs, JSON views, globs and missing paths should dispatch correctly."""
     monkeypatch.setattr(
