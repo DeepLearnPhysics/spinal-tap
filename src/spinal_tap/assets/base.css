@@ -976,12 +976,6 @@ html[data-spinal-tap-theme="dark"] body .Select-control * {
   margin-bottom: 6px;
 }
 
-/* A converter selection immediately resumes the pending Open action. Hide the
-   completed prompt; pressing Open on a ROOT source clears it before reopening. */
-.larcv-converter-popover:has(.Select-value) {
-  display: none;
-}
-
 .source-open-summary {
   display: none;
 }

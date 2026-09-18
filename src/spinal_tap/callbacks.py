@@ -2979,6 +2979,7 @@ def register_callbacks(app):
             Input("button-load", "n_clicks"),
             Input("store-source-request", "data"),
             Input("input-file-path", "n_submit"),
+            Input("dropdown-larcv-config", "value"),
         ],
         [
             State("input-file-path", "value"),
@@ -2991,12 +2992,18 @@ def register_callbacks(app):
         n_clicks_load,
         source_request,
         n_submit_source,
+        larcv_converter,
         file_path,
         source_mode,
         converter_options,
     ):
         """Reveal converter selection only after opening a LArCV ROOT source."""
         del n_clicks_load, n_submit_source
+
+        if ctx.triggered_id == "dropdown-larcv-config":
+            if larcv_converter:
+                return no_update, True, no_update
+            return (no_update,) * 3
 
         if ctx.triggered_id == "store-source-request":
             if not source_request:

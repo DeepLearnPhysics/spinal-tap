@@ -1495,7 +1495,9 @@ def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkey
     monkeypatch.setattr(
         callback_module, "classify_source", lambda path: ("larcv", path)
     )
-    request, hidden, value = callback(1, None, 0, "/tmp/events.root", "path", options)
+    request, hidden, value = callback(
+        1, None, 0, None, "/tmp/events.root", "path", options
+    )
     assert request["file_path"] == "/tmp/events.root"
     assert request["source_mode"] == "path"
     assert request["revision"]
@@ -1503,7 +1505,7 @@ def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkey
     assert value is None
 
     monkeypatch.setenv("SPINAL_TAP_LARCV_CONFIG", "2x2/truth_240819")
-    assert callback(1, None, 0, "/tmp/events.root", "path", options) == (
+    assert callback(1, None, 0, None, "/tmp/events.root", "path", options) == (
         None,
         True,
         None,
@@ -1511,13 +1513,13 @@ def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkey
     monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG")
 
     monkeypatch.setattr(callback_module, "classify_source", lambda path: ("hdf5", path))
-    assert callback(1, None, 0, "/tmp/events.h5", "path", options) == (
+    assert callback(1, None, 0, None, "/tmp/events.h5", "path", options) == (
         None,
         True,
         None,
     )
-    assert callback(1, None, 0, "", "path", options) == (None, True, None)
-    assert callback(1, None, 0, "/tmp/events.root", "path", []) == (
+    assert callback(1, None, 0, None, "", "path", options) == (None, True, None)
+    assert callback(1, None, 0, None, "/tmp/events.root", "path", []) == (
         None,
         True,
         None,
@@ -1528,12 +1530,16 @@ def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkey
         "classify_source",
         lambda path: (_ for _ in ()).throw(ValueError("bad source")),
     )
-    assert callback(1, None, 0, "/tmp/bad", "path", options) == (None, True, None)
+    assert callback(1, None, 0, None, "/tmp/bad", "path", options) == (
+        None,
+        True,
+        None,
+    )
 
     monkeypatch.setattr(
         callback_module, "ctx", SimpleNamespace(triggered_id="store-source-request")
     )
-    assert callback(1, None, 0, "/tmp/old", "path", options) == (
+    assert callback(1, None, 0, None, "/tmp/old", "path", options) == (
         None,
         True,
         None,
@@ -1545,6 +1551,7 @@ def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkey
         1,
         {"file_path": "/tmp/upload.root", "source_mode": "browse"},
         0,
+        None,
         "/tmp/old",
         "path",
         options,
@@ -1552,6 +1559,25 @@ def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkey
     assert request["file_path"] == "/tmp/upload.root"
     assert request["source_mode"] == "browse"
     assert hidden is False
+
+    monkeypatch.setattr(
+        callback_module,
+        "ctx",
+        SimpleNamespace(triggered_id="dropdown-larcv-config"),
+    )
+    assert callback(
+        1,
+        None,
+        0,
+        "2x2/truth_240819",
+        "/tmp/events.root",
+        "path",
+        options,
+    ) == (no_update, True, no_update)
+    assert (
+        callback(1, None, 0, None, "/tmp/events.root", "path", options)
+        == (no_update,) * 3
+    )
 
 
 @pytest.fixture

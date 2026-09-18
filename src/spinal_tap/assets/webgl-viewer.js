@@ -2459,7 +2459,9 @@
         const target = event.target instanceof Element ? event.target : null;
         if (!target) return;
 
-        if (target.closest("#button-load")) {
+        if (target.closest("#dropdown-larcv-config")) {
+            queueActivity("Loading LArCV source…");
+        } else if (target.closest("#button-load")) {
             queueActivity(sourceActivity());
         } else if (target.closest(
             "#button-go, #button-previous, #button-next"
