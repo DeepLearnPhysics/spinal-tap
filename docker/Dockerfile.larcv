@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 ARG LARCV_TAG=runtime-ubuntu24.04
-ARG SPINE_PROD_REF=bc1141d07b1a6c6bd258e2a203eb685201cefca3
+ARG SPINE_PROD_REF=3cb7ff9ac5fb1baf1a5958bc67e36be616adab52
 
 FROM alpine:3.22 AS configs
 ARG SPINE_PROD_REF
