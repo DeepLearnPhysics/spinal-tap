@@ -7,6 +7,7 @@ from spinal_tap.callbacks import validate_file_access
 from spinal_tap.utils import (
     _validate_larcv_schema_trees,
     canonicalize_data_path,
+    classify_reader_source,
     classify_source,
     clear_data_caches,
     get_data_cache_info,
@@ -365,6 +366,18 @@ def test_initialize_reader_rejects_mixed_larcv_collection(tmp_path):
     with pytest.raises(ValueError, match="cannot mix HDF5 and LArCV"):
         initialize_reader(str(manifest))
     clear_data_caches()
+
+
+def test_classify_reader_source_resolves_larcv_manifest(tmp_path):
+    """A homogeneous ROOT manifest should expose its effective reader kind."""
+    first = tmp_path / "first.root"
+    second = tmp_path / "second.root"
+    first.write_bytes(b"root" + bytes(32))
+    second.write_bytes(b"root" + bytes(32))
+    manifest = tmp_path / "events.list"
+    manifest.write_text(f"{first.name}\n{second.name}\n")
+
+    assert classify_reader_source(str(manifest)) == "larcv"
 
 
 @pytest.mark.parametrize("detector", ["2x2", "2x2-single", "ND-LAr", "fsd"])

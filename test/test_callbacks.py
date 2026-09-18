@@ -1600,6 +1600,27 @@ def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkey
     )
 
 
+def test_larcv_converter_is_requested_for_root_manifests(callback_app, monkeypatch):
+    """A homogeneous LArCV manifest should stage one shared converter."""
+    callback = registered_callback(callback_app, "request_larcv_converter")
+    options = [{"label": "2x2", "value": "2x2/truth_240819"}]
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG", raising=False)
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("manifest", path)
+    )
+    monkeypatch.setattr(callback_module, "classify_reader_source", lambda path: "larcv")
+
+    request, hidden, value = callback(
+        1, None, 0, None, "/tmp/events.list", "path", options
+    )
+    assert request["file_path"] == "/tmp/events.list"
+    assert hidden is False
+    assert value is None
+
+
 @pytest.fixture
 def graph_callback(callback_app, monkeypatch):
     """Prepare the graph callback with deterministic lightweight dependencies."""
@@ -1686,6 +1707,26 @@ def test_graph_waits_for_larcv_converter_then_loads(graph_callback, monkeypatch)
     assert result[1] == 0
     assert result[14]["file_path"] == "/tmp/events.root"
     assert result[14]["larcv_converter"] == "2x2/truth_240819"
+
+
+def test_graph_waits_for_larcv_manifest_converter(graph_callback, monkeypatch):
+    """Opening a ROOT manifest should pause until one converter is selected."""
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG", raising=False)
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("manifest", path)
+    )
+    monkeypatch.setattr(callback_module, "classify_reader_source", lambda path: "larcv")
+    monkeypatch.setattr(
+        callback_module, "validate_manifest_access", lambda path: (True, None)
+    )
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+
+    assert (
+        graph_callback(**graph_arguments(file_path="/tmp/events.list"))
+        == (no_update,) * 17
+    )
 
 
 def test_graph_defers_remote_root_download_until_converter_selection(
@@ -2273,6 +2314,7 @@ def test_graph_callback_fast_refresh_shortcuts(graph_callback, monkeypatch):
         ("access", "Access denied"),
         ("classify", "Could not open source"),
         ("manifest", "manifest denied"),
+        ("manifest-inspect", "Could not inspect source manifest"),
         ("view", "Could not load shared view"),
         ("missing", "File(s) not found"),
         ("reader", "Could not initialize the source:\nRuntimeError: reader exploded"),
@@ -2306,6 +2348,18 @@ def test_graph_callback_reports_source_pipeline_failures(
             callback_module,
             "validate_manifest_access",
             lambda path: (False, "manifest denied"),
+        )
+    elif failure == "manifest-inspect":
+        monkeypatch.setattr(
+            callback_module, "classify_source", lambda path: ("manifest", path)
+        )
+        monkeypatch.setattr(
+            callback_module, "validate_manifest_access", lambda path: (True, None)
+        )
+        monkeypatch.setattr(
+            callback_module,
+            "classify_reader_source",
+            lambda path: (_ for _ in ()).throw(ValueError("mixed inputs")),
         )
     elif failure == "view":
         monkeypatch.setattr(

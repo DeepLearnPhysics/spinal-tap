@@ -48,6 +48,9 @@ LArCV tree names and detector geometry are producer-specific. Open a ROOT
 source first; after Spinal Tap detects its content, it reveals **LArCV
 converter** beneath the Open button and waits for a matching dated bundle.
 Selecting the bundle resumes the load automatically and dismisses the chooser.
+When a detector has multiple bundles, their labels include compatibility tags
+maintained by ``spine-prod``, such as cryostat layout, CRT availability, and
+optical-system generation.
 For a remote URL whose path ends in ``.root``, the chooser appears immediately
 and the download begins only after selection, with progress reported by the
 standard status indicator. The suffix is only an early UI hint: Spinal Tap

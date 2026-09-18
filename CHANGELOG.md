@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] - 2026-09-18
 
 ### Added
 - **Direct LArCV input**: Load LArCV2 ROOT files through SPINE v1.2.4 using an explicitly selected, versioned detector conversion bundle from `spine-prod`.
@@ -16,12 +16,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Source navigation**: Start newly opened files at entry 0 instead of carrying over the previous file's entry index.
 - **Unified source entry**: Accept server paths and public URLs through one Path field, using the existing status indicator for remote loading.
 - **Remote ROOT staging**: Prompt for a LArCV converter from a remote ``.root`` URL before downloading it, then validate its content while the standard loading indicator reports the transfer.
+- **Converter labels**: Distinguish multiple detector-production converters using tags maintained by spine-prod rather than duplicating detector knowledge in Spinal Tap.
 
 ### Fixed
 - **Particle vertices from LArCV**: Build truth interactions alongside particles so the interaction-vertex overlay works in particle mode.
 - **Cached URL inspection**: Refresh temporary-file retention without changing modification timestamps, preserving reader and built-event cache hits when inspecting objects from downloaded sources.
 - **LArCV converter errors**: Validate required ROOT trees before constructing LArCV chains, reporting incompatible converter selections in the application instead of emitting ROOT-only terminal diagnostics.
 - **LArCV fragment mode**: Preserve SPINE's particle dependency when building interactions alongside truth fragments for vertex-capable displays.
+- **LArCV manifests**: Request and preserve one converter for homogeneous manifests of LArCV ROOT files.
 
 ## [1.1.2] - 2026-09-12
 

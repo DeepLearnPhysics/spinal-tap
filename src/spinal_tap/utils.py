@@ -350,6 +350,22 @@ def resolve_reader_keys(source: str) -> tuple[tuple[str, ...], tuple]:
     return keys, get_file_signature(keys)
 
 
+def _classify_reader_keys(file_keys: tuple[str, ...]) -> str:
+    """Return the common data kind for resolved reader inputs."""
+    source_kinds = {
+        detect_source_file(path) for path in file_keys if os.path.isfile(path)
+    }
+    if len(source_kinds) > 1:
+        raise ValueError("A source collection cannot mix HDF5 and LArCV files.")
+    return next(iter(source_kinds), "hdf5")
+
+
+def classify_reader_source(source: str) -> str:
+    """Return the effective data kind behind an exact source or manifest."""
+    file_keys, _ = resolve_reader_keys(source)
+    return _classify_reader_keys(file_keys)
+
+
 def initialize_reader(
     file_path: str,
     use_run: bool = False,
@@ -371,12 +387,7 @@ def initialize_reader(
     """
     file_keys, signature = resolve_reader_keys(file_path)
 
-    source_kinds = {
-        detect_source_file(path) for path in file_keys if os.path.isfile(path)
-    }
-    if len(source_kinds) > 1:
-        raise ValueError("A source collection cannot mix HDF5 and LArCV files.")
-    source_kind = next(iter(source_kinds), "hdf5")
+    source_kind = _classify_reader_keys(file_keys)
 
     # Reader construction and persistent HDF5 handles are shared per process
     with _CACHE_LOCK:

@@ -25,6 +25,7 @@ from .scene import scene_store
 from .source import read_file_manifest
 from .utils import (
     canonicalize_data_path,
+    classify_reader_source,
     classify_source,
     get_reader_products,
     initialize_reader,
@@ -3022,6 +3023,8 @@ def register_callbacks(app):
         else:
             try:
                 source_kind, _ = classify_source(file_path)
+                if source_kind == "manifest":
+                    source_kind = classify_reader_source(file_path)
             except (OSError, ValueError):
                 # The graph callback owns user-visible source errors.
                 return None, True, None
@@ -3527,21 +3530,29 @@ def register_callbacks(app):
             if source_kind == "json":
                 return fail("A shared view cannot reference another shared view.")
 
+        reader_source_kind = source_kind
+        if source_kind == "manifest":
+            is_valid, error_msg = validate_manifest_access(resolved_source)
+            if not is_valid:
+                return fail(error_msg)
+            try:
+                reader_source_kind = classify_reader_source(file_path)
+            except (OSError, ValueError) as error:
+                return fail(
+                    f"Could not inspect source manifest:\n"
+                    f"{type(error).__name__}: {error}"
+                )
+
         # Opening raw ROOT first requests an explicit parser selection. The
         # dropdown change re-enters this callback with the source remembered
         # in ``store-larcv-request`` and performs the actual load.
         if (
             trigger in SOURCE_OPEN_TRIGGERS
-            and source_kind == "larcv"
+            and reader_source_kind == "larcv"
             and restored_state is None
             and not os.getenv("SPINAL_TAP_LARCV_CONFIG")
         ):
             return (no_update,) * 17
-
-        if source_kind == "manifest":
-            is_valid, error_msg = validate_manifest_access(resolved_source)
-            if not is_valid:
-                return fail(error_msg)
 
         try:
             entry = parse_optional_int(entry)
@@ -3894,7 +3905,7 @@ def register_callbacks(app):
                     "event": event,
                     "use_run": use_run,
                     "larcv_converter": (
-                        larcv_converter if source_kind == "larcv" else None
+                        larcv_converter if reader_source_kind == "larcv" else None
                     ),
                     "reco_filter": [
                         key for key in active_filter if key.startswith("reco:")
