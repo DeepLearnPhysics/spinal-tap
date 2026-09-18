@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Contextual LArCV configuration**: Request a detector converter only after opening a detected ROOT source, leaving the control hidden for other source types.
 - **Source navigation**: Start newly opened files at entry 0 instead of carrying over the previous file's entry index.
 - **Unified source entry**: Accept server paths and public URLs through one Path field, using the existing status indicator for remote loading.
+- **Remote ROOT staging**: Prompt for a LArCV converter from a remote ``.root`` URL before downloading it, then validate its content while the standard loading indicator reports the transfer.
 
 ### Fixed
 - **Particle vertices from LArCV**: Build truth interactions alongside particles so the interaction-vertex overlay works in particle mode.

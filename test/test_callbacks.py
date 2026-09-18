@@ -1503,6 +1503,27 @@ def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkey
     assert hidden is False
     assert value is None
 
+    monkeypatch.setattr(
+        callback_module,
+        "classify_source",
+        lambda path: (_ for _ in ()).throw(AssertionError("downloaded too early")),
+    )
+    request, hidden, value = callback(
+        1,
+        None,
+        0,
+        None,
+        "https://example.org/events.ROOT?token=abc",
+        "path",
+        options,
+    )
+    assert request["file_path"].startswith("https://")
+    assert hidden is False
+    assert value is None
+
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("larcv", path)
+    )
     monkeypatch.setenv("SPINAL_TAP_LARCV_CONFIG", "2x2/truth_240819")
     assert callback(1, None, 0, None, "/tmp/events.root", "path", options) == (
         None,
@@ -1665,6 +1686,48 @@ def test_graph_waits_for_larcv_converter_then_loads(graph_callback, monkeypatch)
     assert result[1] == 0
     assert result[14]["file_path"] == "/tmp/events.root"
     assert result[14]["larcv_converter"] == "2x2/truth_240819"
+
+
+def test_graph_defers_remote_root_download_until_converter_selection(
+    graph_callback, monkeypatch
+):
+    """A remote .root hint should stage selection without fetching the file."""
+    source = "https://example.org/events.root?token=abc"
+    request = {"file_path": source, "source_mode": "path"}
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG", raising=False)
+    monkeypatch.setattr(
+        callback_module,
+        "available_larcv_converters",
+        lambda: [{"label": "2x2", "value": "2x2/truth_240819"}],
+    )
+    monkeypatch.setattr(
+        callback_module,
+        "classify_source",
+        lambda path: (_ for _ in ()).throw(AssertionError("downloaded too early")),
+    )
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+
+    assert graph_callback(**graph_arguments(file_path=source)) == (no_update,) * 17
+
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("larcv", path)
+    )
+    monkeypatch.setattr(
+        callback_module,
+        "ctx",
+        SimpleNamespace(triggered_id="dropdown-larcv-config"),
+    )
+    result = graph_callback(
+        **graph_arguments(
+            file_path="/tmp/stale.h5",
+            larcv_converter="2x2/truth_240819",
+            larcv_request=request,
+        )
+    )
+    assert isinstance(result[0], html.Div)
+    assert result[14]["file_path"] == source
 
 
 @pytest.mark.parametrize(

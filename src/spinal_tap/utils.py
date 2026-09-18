@@ -6,6 +6,7 @@ from functools import lru_cache
 from pathlib import Path
 from threading import RLock
 from typing import Any, Dict, Iterable, Optional, Tuple
+from urllib.parse import unquote, urlsplit
 
 from spine.constants import NuInteractionScheme
 from spine.construct import BuildManager
@@ -21,6 +22,24 @@ EVENT_CACHE_SIZE = int(os.getenv("SPINAL_TAP_EVENT_CACHE_SIZE", "2"))
 GENIE_INTERACTION_DETECTORS = frozenset({"2x2", "2x2-single", "nd-lar", "fsd"})
 
 _CACHE_LOCK = RLock()
+
+
+def is_remote_root_hint(source: str) -> bool:
+    """Return whether an HTTP(S) URL advertises a ROOT file in its path.
+
+    This is only a UI hint used to request a LArCV converter before a remote
+    file is downloaded. Source dispatch still validates the cached content.
+    """
+    try:
+        parsed = urlsplit((source or "").strip())
+    except (TypeError, ValueError):
+        return False
+
+    return (
+        parsed.scheme.lower() in {"http", "https"}
+        and bool(parsed.netloc)
+        and unquote(parsed.path).lower().endswith(".root")
+    )
 
 
 class LArCVDataReader:

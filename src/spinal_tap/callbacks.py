@@ -13,6 +13,7 @@ from dash.dependencies import Input, Output, State
 from spine.geo import GeoManager
 from spine.vis import Drawer, colorable_attributes, object_color_kind
 
+from .converters import available_larcv_converters
 from .filtering import (
     attach_object_filter_metadata,
     build_object_filter_options,
@@ -27,6 +28,7 @@ from .utils import (
     classify_source,
     get_reader_products,
     initialize_reader,
+    is_remote_root_hint,
     load_data,
     resolve_source_path,
 )
@@ -3015,11 +3017,14 @@ def register_callbacks(app):
         if not file_path or not converter_options:
             return None, True, None
 
-        try:
-            source_kind, _ = classify_source(file_path)
-        except (OSError, ValueError):
-            # The graph callback owns user-visible source errors.
-            return None, True, None
+        if is_remote_root_hint(file_path):
+            source_kind = "larcv"
+        else:
+            try:
+                source_kind, _ = classify_source(file_path)
+            except (OSError, ValueError):
+                # The graph callback owns user-visible source errors.
+                return None, True, None
 
         if source_kind != "larcv" or os.getenv("SPINAL_TAP_LARCV_CONFIG"):
             return None, True, None
@@ -3409,6 +3414,20 @@ def register_callbacks(app):
         is_valid, error_msg = validate_file_access(file_path)
         if not is_valid:
             return fail(error_msg)
+
+        # A .root suffix in a remote URL is enough to stage converter choice,
+        # but not enough to classify the source. Defer the download until the
+        # user selects a converter; normal content detection below then
+        # validates the downloaded file. Without installed converter options,
+        # continue so the source produces its normal actionable error.
+        if (
+            trigger in SOURCE_OPEN_TRIGGERS
+            and restored_state is None
+            and is_remote_root_hint(file_path)
+            and not os.getenv("SPINAL_TAP_LARCV_CONFIG")
+            and available_larcv_converters()
+        ):
+            return (no_update,) * 17
 
         # Dispatch exact files by content, not extension. URL sources are
         # materialized into the private cache before applying the same rules.

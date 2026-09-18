@@ -13,11 +13,30 @@ from spinal_tap.utils import (
     get_file_signature,
     get_reader_products,
     initialize_reader,
+    is_remote_root_hint,
     load_data,
     resolve_data_path,
     resolve_reader_keys,
     resolve_source_path,
 )
+
+
+@pytest.mark.parametrize(
+    "source,expected",
+    [
+        ("https://example.org/events.root", True),
+        ("https://example.org/events.ROOT?token=abc#entry", True),
+        ("http://example.org/a%2Eroot", True),
+        ("https://example.org/events.h5", False),
+        ("/tmp/events.root", False),
+        ("events.root", False),
+        ("not a URL", False),
+        ("https://[invalid/events.root", False),
+    ],
+)
+def test_remote_root_hint(source, expected):
+    """Only HTTP(S) URL paths ending in .root should prompt before download."""
+    assert is_remote_root_hint(source) is expected
 
 
 def test_get_reader_products_uses_writer_configuration():

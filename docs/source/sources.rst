@@ -48,7 +48,12 @@ LArCV tree names and detector geometry are producer-specific. Open a ROOT
 source first; after Spinal Tap detects its content, it reveals **LArCV
 converter** beneath the Open button and waits for a matching dated bundle.
 Selecting the bundle resumes the load automatically and dismisses the chooser.
-The control stays hidden for other source types.
+For a remote URL whose path ends in ``.root``, the chooser appears immediately
+and the download begins only after selection, with progress reported by the
+standard status indicator. The suffix is only an early UI hint: Spinal Tap
+still validates the downloaded content. Extensionless remote sources must be
+downloaded before their type can be detected. The control stays hidden for
+other source types.
 Spinal Tap then parses and builds the SPINE truth representation in memory; it
 does not write an intermediate HDF5 file. A manifest may contain several LArCV
 files that use the same bundle, but it cannot mix LArCV and HDF5 files.

@@ -2460,7 +2460,7 @@
         if (!target) return;
 
         if (target.closest("#dropdown-larcv-config")) {
-            queueActivity("Loading LArCV source…");
+            queueActivity(sourceActivity());
         } else if (target.closest("#button-load")) {
             queueActivity(sourceActivity());
         } else if (target.closest(
