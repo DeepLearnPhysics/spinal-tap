@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Fixed
 - **Particle vertices from LArCV**: Build truth interactions alongside particles so the interaction-vertex overlay works in particle mode.
 - **Cached URL inspection**: Refresh temporary-file retention without changing modification timestamps, preserving reader and built-event cache hits when inspecting objects from downloaded sources.
+- **LArCV converter errors**: Validate required ROOT trees before constructing LArCV chains, reporting incompatible converter selections in the application instead of emitting ROOT-only terminal diagnostics.
 
 ## [1.1.2] - 2026-09-12
 

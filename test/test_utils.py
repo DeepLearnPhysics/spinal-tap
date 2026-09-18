@@ -5,6 +5,7 @@ import pytest
 from spinal_tap import app
 from spinal_tap.callbacks import validate_file_access
 from spinal_tap.utils import (
+    _validate_larcv_schema_trees,
     canonicalize_data_path,
     classify_source,
     clear_data_caches,
@@ -236,6 +237,9 @@ def test_initialize_larcv_reader_uses_spine_prod_bundle(monkeypatch, tmp_path):
         lambda **kwargs: geometry_calls.append(kwargs),
     )
     monkeypatch.setattr(dataset_module, "LArCVDataset", Dataset)
+    monkeypatch.setattr(
+        "spinal_tap.utils._validate_larcv_schema_trees", lambda *args: None
+    )
 
     clear_data_caches()
     reader = initialize_reader(str(path), use_run=True, larcv_config=str(config_path))
@@ -263,6 +267,66 @@ def test_initialize_larcv_reader_uses_spine_prod_bundle(monkeypatch, tmp_path):
         }
     ]
     clear_data_caches()
+
+
+def test_validate_larcv_schema_trees_reports_converter_mismatch(monkeypatch):
+    """Missing converter inputs should be reported before TChain creation."""
+    from spine.config import factory
+    from spine.utils import conditional
+
+    closed = []
+
+    class Parser:
+        tree_keys = ("sparse3d_data", "opflash_light")
+
+    class Key:
+        def __init__(self, name):
+            self.name = name
+
+        def GetName(self):
+            return self.name
+
+    class RootFile:
+        def __init__(self, names, zombie=False):
+            self.names = names
+            self.zombie = zombie
+
+        def IsZombie(self):
+            return self.zombie
+
+        def GetListOfKeys(self):
+            return [Key(name) for name in self.names]
+
+        def Close(self):
+            closed.append(self)
+
+    files = {
+        "/data/good.root": RootFile(["sparse3d_data_tree", "opflash_light_tree"]),
+        "/data/bad.root": RootFile(["sparse3d_data_tree"]),
+        "/data/zombie.root": RootFile([], zombie=True),
+        "/data/unreadable.root": None,
+    }
+    root = type(
+        "Root",
+        (),
+        {"TFile": type("TFile", (), {"Open": staticmethod(files.get)})},
+    )
+    monkeypatch.setattr(factory, "instantiate", lambda *args, **kwargs: Parser())
+    monkeypatch.setattr(conditional, "ROOT", root)
+    schema = {"data": {"parser": "sparse3d"}}
+
+    _validate_larcv_schema_trees(("/data/good.root",), schema, "float32")
+    with pytest.raises(ValueError, match="bad.root: opflash_light_tree"):
+        _validate_larcv_schema_trees(("/data/bad.root",), schema, "float32")
+    with pytest.raises(OSError, match="zombie.root"):
+        _validate_larcv_schema_trees(("/data/zombie.root",), schema, "float32")
+    with pytest.raises(OSError, match="unreadable.root"):
+        _validate_larcv_schema_trees(("/data/unreadable.root",), schema, "float32")
+    assert closed == [
+        files["/data/good.root"],
+        files["/data/bad.root"],
+        files["/data/zombie.root"],
+    ]
 
 
 def test_initialize_larcv_reader_requires_run_info(monkeypatch, tmp_path):

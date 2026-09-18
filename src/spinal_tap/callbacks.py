@@ -3558,9 +3558,11 @@ def register_callbacks(app):
             except FileNotFoundError:
                 msg = f"File(s) not found:\n{file_path}"
                 return fail(msg)
-            except Exception as e:
-                msg = repr(e)
-                return fail(msg)
+            except Exception as error:
+                return fail(
+                    f"Could not initialize the source:\n"
+                    f"{type(error).__name__}: {error}"
+                )
 
         # Check that the appropriate information is provided, abort otherwise
         if not use_run and entry is None:

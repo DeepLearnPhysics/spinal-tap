@@ -94,6 +94,50 @@ def _configure_reader_object_defaults(reader: HDF5Reader) -> None:
     reader.object_defaults = defaults
 
 
+def _validate_larcv_schema_trees(
+    file_keys: tuple[str, ...], schema: dict[str, Any], dtype: str
+) -> None:
+    """Reject a converter/file mismatch before ROOT constructs noisy chains."""
+    from spine.config.factory import instantiate
+    from spine.io.dataset.larcv import PARSER_DICT
+    from spine.utils.conditional import ROOT
+
+    tree_keys = {
+        key
+        for parser_cfg in schema.values()
+        for key in instantiate(
+            PARSER_DICT, parser_cfg, alt_name="parser", dtype=dtype
+        ).tree_keys
+    }
+    required = {f"{key}_tree" for key in tree_keys}
+
+    missing_by_file = []
+    for file_path in file_keys:
+        root_file = ROOT.TFile.Open(file_path, "READ")
+        if not root_file:
+            raise OSError(f"Could not open LArCV ROOT file: {file_path}")
+        try:
+            if root_file.IsZombie():
+                raise OSError(f"Could not open LArCV ROOT file: {file_path}")
+            available = {key.GetName() for key in root_file.GetListOfKeys()}
+            missing = sorted(required - available)
+            if missing:
+                missing_by_file.append((file_path, missing))
+        finally:
+            root_file.Close()
+
+    if missing_by_file:
+        details = "; ".join(
+            f"{Path(file_path).name}: {', '.join(missing)}"
+            for file_path, missing in missing_by_file
+        )
+        raise ValueError(
+            "The selected LArCV converter is incompatible with the source. "
+            f"Missing required tree(s): {details}. Choose a converter matching "
+            "this detector and production."
+        )
+
+
 def canonicalize_data_path(file_path: str) -> str:
     """Canonicalize equivalent S3DF and container data paths.
 
@@ -243,6 +287,8 @@ def _initialize_larcv_reader_cached(
             raise ValueError(
                 "The selected LArCV conversion schema has no run-info source."
             )
+
+    _validate_larcv_schema_trees(file_keys, schema, dtype)
 
     keys: str | list[str] = file_keys[0] if len(file_keys) == 1 else list(file_keys)
     dataset = LArCVDataset(

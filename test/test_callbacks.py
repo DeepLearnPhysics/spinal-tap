@@ -2275,7 +2275,7 @@ def test_graph_callback_fast_refresh_shortcuts(graph_callback, monkeypatch):
         ("manifest", "manifest denied"),
         ("view", "Could not load shared view"),
         ("missing", "File(s) not found"),
-        ("reader", "reader exploded"),
+        ("reader", "Could not initialize the source:\nRuntimeError: reader exploded"),
         ("load", "Could not load the selected event"),
     ],
 )
