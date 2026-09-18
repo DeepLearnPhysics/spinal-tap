@@ -2429,7 +2429,7 @@
     function sourceActivity() {
         const mode = document.querySelector("#source-mode input:checked")?.value;
         const source = document.getElementById("input-file-path")?.value?.trim();
-        if (mode === "url" && source) {
+        if (/^https?:\/\//.test(source || "")) {
             try {
                 const url = new URL(source);
                 const name = url.pathname.split("/").filter(Boolean).pop();
@@ -2459,7 +2459,9 @@
         const target = event.target instanceof Element ? event.target : null;
         if (!target) return;
 
-        if (target.closest("#button-load")) {
+        if (target.closest("#dropdown-larcv-config")) {
+            queueActivity(sourceActivity());
+        } else if (target.closest("#button-load")) {
             queueActivity(sourceActivity());
         } else if (target.closest(
             "#button-go, #button-previous, #button-next"

@@ -1,6 +1,7 @@
 """Defines the callbacks of the Spinal Tap application."""
 
 import json
+import os
 import uuid
 from dataclasses import replace
 from pathlib import Path
@@ -12,6 +13,7 @@ from dash.dependencies import Input, Output, State
 from spine.geo import GeoManager
 from spine.vis import Drawer, colorable_attributes, object_color_kind
 
+from .converters import available_larcv_converters
 from .filtering import (
     attach_object_filter_metadata,
     build_object_filter_options,
@@ -23,9 +25,11 @@ from .scene import scene_store
 from .source import read_file_manifest
 from .utils import (
     canonicalize_data_path,
+    classify_reader_source,
     classify_source,
     get_reader_products,
     initialize_reader,
+    is_remote_root_hint,
     load_data,
     resolve_source_path,
 )
@@ -70,6 +74,7 @@ EVENT_NAVIGATION_TRIGGERS = {
 }
 NAVIGATION_TRIGGERS = SOURCE_OPEN_TRIGGERS | EVENT_NAVIGATION_TRIGGERS
 FILTER_RESET_TRIGGERS = NAVIGATION_TRIGGERS | {
+    "dropdown-larcv-config",
     "radio-object-mode",
     "radio-run-mode",
     "store-share-pending",
@@ -182,6 +187,10 @@ def validate_view_state(state):
         )
     if not isinstance(state.get("file"), str) or not state["file"]:
         raise ValueError("The view state does not contain a file path.")
+    if state.get("larcv_converter") is not None and not isinstance(
+        state["larcv_converter"], str
+    ):
+        raise ValueError("The view state contains an invalid LArCV converter.")
     try:
         entry = int(state.get("entry"))
     except (TypeError, ValueError) as error:
@@ -1356,7 +1365,9 @@ def register_callbacks(app):
 
         try:
             reader = initialize_reader(
-                loaded_event["file_path"], loaded_event.get("use_run", False)
+                loaded_event["file_path"],
+                loaded_event.get("use_run", False),
+                loaded_event.get("larcv_converter"),
             )
             data, *_ = load_data(reader, loaded_event["entry"], mode, selected_family)
             collection = data[object_collection_key(prefix, selected_family)]
@@ -1519,6 +1530,7 @@ def register_callbacks(app):
             return [{
                 version: window.spinalTapShare?.version || 1,
                 file: loadedEvent.file_path,
+                larcv_converter: loadedEvent.larcv_converter || null,
                 entry: loadedEvent.entry,
                 run: loadedEvent.run,
                 subrun: loadedEvent.subrun,
@@ -1765,23 +1777,24 @@ def register_callbacks(app):
             }
 
             const setProps = window.dash_clientside.set_props;
-            const dataMode = /^https?:\/\//.test(state.file) ? 'url' : 'path';
+            const dataMode = 'path';
             const sourceMemory = window.spinalTapSourceState;
+            const importMode = ['browse', 'upload'].includes(state.import_mode)
+                ? state.import_mode : dataMode;
             const offClicks = (linkClicks || 0) % 2
                 ? (linkClicks || 0) + 1
                 : (linkClicks || 0);
 
             // Browse describes how the view definition was imported. Keep it
-            // selected, but remember the referenced data source in the Path or
-            // URL field where the user expects to find it later.
+            // selected, but remember the referenced data source in the combined
+            // Path field where the user expects to find it later.
             if (sourceMemory?.values) {
                 sourceMemory.values[dataMode] = state.file;
-                sourceMemory.values[dataMode === 'url' ? 'path' : 'url'] = '';
             }
             setProps('input-file-path', {value: state.file});
             setProps('input-entry', {value: state.entry ?? 0});
             setProps('source-mode', {
-                value: state.import_mode || dataMode
+                value: importMode
             });
             setProps('entry-mode', {value: 'entry'});
             setProps('input-entry', {
@@ -2962,6 +2975,75 @@ def register_callbacks(app):
 
     @app.callback(
         [
+            Output("store-larcv-request", "data"),
+            Output("larcv-converter-row", "hidden"),
+            Output("dropdown-larcv-config", "value"),
+        ],
+        [
+            Input("button-load", "n_clicks"),
+            Input("store-source-request", "data"),
+            Input("input-file-path", "n_submit"),
+            Input("dropdown-larcv-config", "value"),
+        ],
+        [
+            State("input-file-path", "value"),
+            State("source-mode", "value"),
+            State("dropdown-larcv-config", "options"),
+        ],
+        prevent_initial_call=True,
+    )
+    def request_larcv_converter(
+        n_clicks_load,
+        source_request,
+        n_submit_source,
+        larcv_converter,
+        file_path,
+        source_mode,
+        converter_options,
+    ):
+        """Reveal converter selection only after opening a LArCV ROOT source."""
+        del n_clicks_load, n_submit_source
+
+        if ctx.triggered_id == "dropdown-larcv-config":
+            if larcv_converter:
+                return no_update, True, no_update
+            return (no_update,) * 3
+
+        if ctx.triggered_id == "store-source-request":
+            if not source_request:
+                return None, True, None
+            file_path = source_request.get("file_path")
+            source_mode = source_request.get("source_mode", source_mode)
+
+        if not file_path or not converter_options:
+            return None, True, None
+
+        if is_remote_root_hint(file_path):
+            source_kind = "larcv"
+        else:
+            try:
+                source_kind, _ = classify_source(file_path)
+                if source_kind == "manifest":
+                    source_kind = classify_reader_source(file_path)
+            except (OSError, ValueError):
+                # The graph callback owns user-visible source errors.
+                return None, True, None
+
+        if source_kind != "larcv" or os.getenv("SPINAL_TAP_LARCV_CONFIG"):
+            return None, True, None
+
+        return (
+            {
+                "file_path": file_path,
+                "source_mode": source_mode,
+                "revision": uuid.uuid4().hex,
+            },
+            False,
+            None,
+        )
+
+    @app.callback(
+        [
             Output("div-evd", "children"),
             Output("input-entry", "value"),
             Output("input-run", "value"),
@@ -3006,11 +3088,13 @@ def register_callbacks(app):
             Input("radio-crt-mode", "value"),
             Input("checklist-draw-mode-2", "value"),
             Input("store-share-pending", "data"),
+            Input("dropdown-larcv-config", "value"),
         ],
         [
             State("store-object-filter", "data"),
             State("input-file-path", "value"),
             State("source-mode", "value"),
+            State("store-larcv-request", "data"),
             State("input-entry", "value"),
             State("input-run", "value"),
             State("input-subrun", "value"),
@@ -3063,9 +3147,11 @@ def register_callbacks(app):
         crt_mode,
         draw_mode_2,
         share_pending,
+        larcv_converter,
         object_filter,
         file_path,
         source_mode,
+        larcv_request,
         entry,
         run,
         subrun,
@@ -3141,6 +3227,8 @@ def register_callbacks(app):
             Path to the input file
         source_mode : str
             Source mode used to open the input file.
+        larcv_converter : str, optional
+            Installed spine-prod conversion bundle used for LArCV input.
         entry : int
             Entry number
         entry_prev : int
@@ -3207,6 +3295,12 @@ def register_callbacks(app):
             file_path = source_request.get("file_path")
             source_mode = source_request.get("source_mode", source_mode)
 
+        if trigger == "dropdown-larcv-config":
+            if not larcv_converter or not larcv_request:
+                return (no_update,) * 17
+            file_path = larcv_request.get("file_path")
+            source_mode = larcv_request.get("source_mode", source_mode)
+
         restoring_view = False
         share_request_output = no_update
         restored_state = None
@@ -3245,11 +3339,23 @@ def register_callbacks(app):
             subrun = loaded_event.get("subrun")
             event = loaded_event.get("event")
             use_run = loaded_event.get("use_run", use_run)
+            larcv_converter = loaded_event.get("larcv_converter", larcv_converter)
 
         # Browse identifies the file used to import data or a saved view. Once
         # an event is open, navigation must follow that event's resolved HDF5
         # source rather than re-opening the uploaded JSON document.
         file_path = navigation_file_path(file_path, source_mode, trigger, loaded_event)
+
+        # An entry index belongs to the file it was selected from. Start a
+        # genuinely different source at its first entry instead of carrying a
+        # potentially invalid index across from the currently displayed file.
+        opening_source = trigger in SOURCE_OPEN_TRIGGERS or trigger == (
+            "dropdown-larcv-config"
+        )
+        if opening_source and loaded_event and file_path:
+            previous_path = loaded_event.get("file_path")
+            if previous_path != canonicalize_data_path(file_path):
+                entry = 0
 
         # Updating store-entry reflects automatic file geometry into the two
         # dropdowns. Those programmatic value changes do not require another
@@ -3312,6 +3418,20 @@ def register_callbacks(app):
         if not is_valid:
             return fail(error_msg)
 
+        # A .root suffix in a remote URL is enough to stage converter choice,
+        # but not enough to classify the source. Defer the download until the
+        # user selects a converter; normal content detection below then
+        # validates the downloaded file. Without installed converter options,
+        # continue so the source produces its normal actionable error.
+        if (
+            trigger in SOURCE_OPEN_TRIGGERS
+            and restored_state is None
+            and is_remote_root_hint(file_path)
+            and not os.getenv("SPINAL_TAP_LARCV_CONFIG")
+            and available_larcv_converters()
+        ):
+            return (no_update,) * 17
+
         # Dispatch exact files by content, not extension. URL sources are
         # materialized into the private cache before applying the same rules.
         try:
@@ -3354,6 +3474,7 @@ def register_callbacks(app):
             overlays = display_state.get("overlays") or []
 
             file_path = restored_state["file"]
+            larcv_converter = restored_state.get("larcv_converter", larcv_converter)
             entry = restored_state["entry"]
             entry_mode = "entry"
             use_run = False
@@ -3409,10 +3530,29 @@ def register_callbacks(app):
             if source_kind == "json":
                 return fail("A shared view cannot reference another shared view.")
 
+        reader_source_kind = source_kind
         if source_kind == "manifest":
             is_valid, error_msg = validate_manifest_access(resolved_source)
             if not is_valid:
                 return fail(error_msg)
+            try:
+                reader_source_kind = classify_reader_source(file_path)
+            except (OSError, ValueError) as error:
+                return fail(
+                    f"Could not inspect source manifest:\n"
+                    f"{type(error).__name__}: {error}"
+                )
+
+        # Opening raw ROOT first requests an explicit parser selection. The
+        # dropdown change re-enters this callback with the source remembered
+        # in ``store-larcv-request`` and performs the actual load.
+        if (
+            trigger in SOURCE_OPEN_TRIGGERS
+            and reader_source_kind == "larcv"
+            and restored_state is None
+            and not os.getenv("SPINAL_TAP_LARCV_CONFIG")
+        ):
+            return (no_update,) * 17
 
         try:
             entry = parse_optional_int(entry)
@@ -3424,14 +3564,16 @@ def register_callbacks(app):
 
         else:
             try:
-                reader = initialize_reader(file_path, use_run)
+                reader = initialize_reader(file_path, use_run, larcv_converter)
                 msg = f"File(s) found with {len(reader)} entries"
             except FileNotFoundError:
                 msg = f"File(s) not found:\n{file_path}"
                 return fail(msg)
-            except Exception as e:
-                msg = repr(e)
-                return fail(msg)
+            except Exception as error:
+                return fail(
+                    f"Could not initialize the source:\n"
+                    f"{type(error).__name__}: {error}"
+                )
 
         # Check that the appropriate information is provided, abort otherwise
         if not use_run and entry is None:
@@ -3762,6 +3904,9 @@ def register_callbacks(app):
                     "subrun": subrun,
                     "event": event,
                     "use_run": use_run,
+                    "larcv_converter": (
+                        larcv_converter if reader_source_kind == "larcv" else None
+                    ),
                     "reco_filter": [
                         key for key in active_filter if key.startswith("reco:")
                     ],
@@ -3785,11 +3930,7 @@ def register_callbacks(app):
                     "num_entries": len(reader),
                     "temporary": temporary_source,
                     "navigation_source_mode": (
-                        (
-                            "url"
-                            if canonical_path.startswith(("http://", "https://"))
-                            else "path"
-                        )
+                        "path"
                         if source_mode in {"browse", "upload"}
                         and trigger in EVENT_NAVIGATION_TRIGGERS
                         else None
@@ -3907,16 +4048,8 @@ def register_callbacks(app):
         shown = {"display": "flex"}
         if mode in {"browse", "upload"}:
             return "", True, hidden, {"display": "grid"}, {"display": "block"}
-        if mode == "url":
-            return (
-                "HTTPS URL to HDF5, manifest, or view…",
-                False,
-                shown,
-                hidden,
-                {"display": "block"},
-            )
         return (
-            "HDF5, manifest, or view path…",
+            "HDF5, LArCV ROOT, manifest, view path, or HTTPS URL…",
             False,
             shown,
             hidden,
@@ -3931,13 +4064,11 @@ def register_callbacks(app):
             }
 
             const file = loadedEvent.file_path;
-            const mode = /^https?:\/\//.test(file) ? 'url' : 'path';
-            const other = mode === 'url' ? 'path' : 'url';
+            const mode = 'path';
             const navigationMode = loadedEvent.navigation_source_mode;
             const sourceMemory = window.spinalTapSourceState;
             if (sourceMemory?.values) {
                 sourceMemory.values[mode] = file;
-                sourceMemory.values[other] = '';
                 if (navigationMode) {
                     sourceMemory.active = navigationMode;
                     setTimeout(function() {

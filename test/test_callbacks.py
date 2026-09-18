@@ -972,6 +972,15 @@ def test_view_state_is_validated_and_gets_a_restore_revision(tmp_path):
                 "version": 1,
                 "file": "/data/a.h5",
                 "entry": 0,
+                "larcv_converter": ["2x2/truth"],
+            },
+            "LArCV converter",
+        ),
+        (
+            {
+                "version": 1,
+                "file": "/data/a.h5",
+                "entry": 0,
                 "objects": {"reco": "not-all"},
             },
             "object selection",
@@ -1144,6 +1153,8 @@ def test_scene_refresh_inputs_use_committed_multi_selects():
 
     assert ("store-dropdown-commit", "data") in inputs
     assert ("input-file-path", "n_submit") in inputs
+    assert ("dropdown-larcv-config", "value") in inputs
+    assert ("store-larcv-request", "data") in states
     for field in ("input-entry", "input-run", "input-subrun", "input-event"):
         assert (field, "n_submit") in inputs
     assert ("radio-run-mode", "value") in inputs
@@ -1371,8 +1382,7 @@ def test_registered_login_entry_and_source_callbacks(callback_app, monkeypatch):
         {"display": "none"},
         {"display": "grid"},
     )
-    assert source("url")[0].startswith("HTTPS URL")
-    assert source("path")[0].startswith("HDF5")
+    assert "HTTPS URL" in source("path")[0]
 
 
 class FakeReader:
@@ -1452,6 +1462,8 @@ def graph_arguments(**overrides):
         "draw_mode_2": ["split_scene", "sync"],
         "axes": ["axes"],
         "file_path": "/tmp/events.h5",
+        "larcv_converter": None,
+        "larcv_request": None,
         "source_mode": "path",
         "entry": 0,
         "run": None,
@@ -1468,6 +1480,145 @@ def graph_arguments(**overrides):
     }
     values.update(overrides)
     return values
+
+
+def test_larcv_converter_is_requested_only_for_root_sources(callback_app, monkeypatch):
+    """Opening ROOT should reveal a fresh selector without occupying HDF5 UI."""
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG", raising=False)
+    callback = registered_callback(callback_app, "request_larcv_converter")
+    options = [{"label": "2x2", "value": "2x2/truth_240819"}]
+
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("larcv", path)
+    )
+    request, hidden, value = callback(
+        1, None, 0, None, "/tmp/events.root", "path", options
+    )
+    assert request["file_path"] == "/tmp/events.root"
+    assert request["source_mode"] == "path"
+    assert request["revision"]
+    assert hidden is False
+    assert value is None
+
+    monkeypatch.setattr(
+        callback_module,
+        "classify_source",
+        lambda path: (_ for _ in ()).throw(AssertionError("downloaded too early")),
+    )
+    request, hidden, value = callback(
+        1,
+        None,
+        0,
+        None,
+        "https://example.org/events.ROOT?token=abc",
+        "path",
+        options,
+    )
+    assert request["file_path"].startswith("https://")
+    assert hidden is False
+    assert value is None
+
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("larcv", path)
+    )
+    monkeypatch.setenv("SPINAL_TAP_LARCV_CONFIG", "2x2/truth_240819")
+    assert callback(1, None, 0, None, "/tmp/events.root", "path", options) == (
+        None,
+        True,
+        None,
+    )
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG")
+
+    monkeypatch.setattr(callback_module, "classify_source", lambda path: ("hdf5", path))
+    assert callback(1, None, 0, None, "/tmp/events.h5", "path", options) == (
+        None,
+        True,
+        None,
+    )
+    assert callback(1, None, 0, None, "", "path", options) == (None, True, None)
+    assert callback(1, None, 0, None, "/tmp/events.root", "path", []) == (
+        None,
+        True,
+        None,
+    )
+
+    monkeypatch.setattr(
+        callback_module,
+        "classify_source",
+        lambda path: (_ for _ in ()).throw(ValueError("bad source")),
+    )
+    assert callback(1, None, 0, None, "/tmp/bad", "path", options) == (
+        None,
+        True,
+        None,
+    )
+
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="store-source-request")
+    )
+    assert callback(1, None, 0, None, "/tmp/old", "path", options) == (
+        None,
+        True,
+        None,
+    )
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("larcv", path)
+    )
+    request, hidden, _ = callback(
+        1,
+        {"file_path": "/tmp/upload.root", "source_mode": "browse"},
+        0,
+        None,
+        "/tmp/old",
+        "path",
+        options,
+    )
+    assert request["file_path"] == "/tmp/upload.root"
+    assert request["source_mode"] == "browse"
+    assert hidden is False
+
+    monkeypatch.setattr(
+        callback_module,
+        "ctx",
+        SimpleNamespace(triggered_id="dropdown-larcv-config"),
+    )
+    assert callback(
+        1,
+        None,
+        0,
+        "2x2/truth_240819",
+        "/tmp/events.root",
+        "path",
+        options,
+    ) == (no_update, True, no_update)
+    assert (
+        callback(1, None, 0, None, "/tmp/events.root", "path", options)
+        == (no_update,) * 3
+    )
+
+
+def test_larcv_converter_is_requested_for_root_manifests(callback_app, monkeypatch):
+    """A homogeneous LArCV manifest should stage one shared converter."""
+    callback = registered_callback(callback_app, "request_larcv_converter")
+    options = [{"label": "2x2", "value": "2x2/truth_240819"}]
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG", raising=False)
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("manifest", path)
+    )
+    monkeypatch.setattr(callback_module, "classify_reader_source", lambda path: "larcv")
+
+    request, hidden, value = callback(
+        1, None, 0, None, "/tmp/events.list", "path", options
+    )
+    assert request["file_path"] == "/tmp/events.list"
+    assert hidden is False
+    assert value is None
 
 
 @pytest.fixture
@@ -1507,6 +1658,176 @@ def graph_callback(callback_app, monkeypatch):
     monkeypatch.setattr(callback_module.scene_store, "put", lambda scene: "scene-token")
     monkeypatch.setattr("spinal_tap.cache.cache_manager.owns_path", lambda path: False)
     return registered_callback(callback_app, "update_graph")
+
+
+def test_graph_waits_for_larcv_converter_then_loads(graph_callback, monkeypatch):
+    """ROOT Open should stage selection and the selected converter should load it."""
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG", raising=False)
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("larcv", path)
+    )
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+    assert (
+        graph_callback(**graph_arguments(file_path="/tmp/events.root"))
+        == (no_update,) * 17
+    )
+
+    monkeypatch.setenv("SPINAL_TAP_LARCV_CONFIG", "2x2/truth_240819")
+    result = graph_callback(**graph_arguments(file_path="/tmp/events.root"))
+    assert isinstance(result[0], html.Div)
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG")
+
+    request = {"file_path": "/tmp/events.root", "source_mode": "path"}
+    monkeypatch.setattr(
+        callback_module,
+        "ctx",
+        SimpleNamespace(triggered_id="dropdown-larcv-config"),
+    )
+    assert (
+        graph_callback(**graph_arguments(larcv_converter=None, larcv_request=request))
+        == (no_update,) * 17
+    )
+
+    result = graph_callback(
+        **graph_arguments(
+            file_path="/tmp/stale.h5",
+            larcv_converter="2x2/truth_240819",
+            larcv_request=request,
+            entry=1,
+            loaded_event={
+                "file_path": "/tmp/previous.h5",
+                "entry": 1,
+                "use_run": False,
+            },
+        )
+    )
+    assert isinstance(result[0], html.Div)
+    assert result[1] == 0
+    assert result[14]["file_path"] == "/tmp/events.root"
+    assert result[14]["larcv_converter"] == "2x2/truth_240819"
+
+
+def test_graph_waits_for_larcv_manifest_converter(graph_callback, monkeypatch):
+    """Opening a ROOT manifest should pause until one converter is selected."""
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG", raising=False)
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("manifest", path)
+    )
+    monkeypatch.setattr(callback_module, "classify_reader_source", lambda path: "larcv")
+    monkeypatch.setattr(
+        callback_module, "validate_manifest_access", lambda path: (True, None)
+    )
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+
+    assert (
+        graph_callback(**graph_arguments(file_path="/tmp/events.list"))
+        == (no_update,) * 17
+    )
+
+
+def test_graph_defers_remote_root_download_until_converter_selection(
+    graph_callback, monkeypatch
+):
+    """A remote .root hint should stage selection without fetching the file."""
+    source = "https://example.org/events.root?token=abc"
+    request = {"file_path": source, "source_mode": "path"}
+    monkeypatch.delenv("SPINAL_TAP_LARCV_CONFIG", raising=False)
+    monkeypatch.setattr(
+        callback_module,
+        "available_larcv_converters",
+        lambda: [{"label": "2x2", "value": "2x2/truth_240819"}],
+    )
+    monkeypatch.setattr(
+        callback_module,
+        "classify_source",
+        lambda path: (_ for _ in ()).throw(AssertionError("downloaded too early")),
+    )
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+
+    assert graph_callback(**graph_arguments(file_path=source)) == (no_update,) * 17
+
+    monkeypatch.setattr(
+        callback_module, "classify_source", lambda path: ("larcv", path)
+    )
+    monkeypatch.setattr(
+        callback_module,
+        "ctx",
+        SimpleNamespace(triggered_id="dropdown-larcv-config"),
+    )
+    result = graph_callback(
+        **graph_arguments(
+            file_path="/tmp/stale.h5",
+            larcv_converter="2x2/truth_240819",
+            larcv_request=request,
+        )
+    )
+    assert isinstance(result[0], html.Div)
+    assert result[14]["file_path"] == source
+
+
+@pytest.mark.parametrize(
+    "trigger,file_path,source_mode,source_request",
+    [
+        ("button-load", "/tmp/next.h5", "path", None),
+        ("button-load", "https://example.org/next.h5", "url", None),
+        (
+            "store-source-request",
+            "/tmp/stale.h5",
+            "path",
+            {"file_path": "/tmp/browsed.h5", "source_mode": "browse"},
+        ),
+    ],
+)
+def test_graph_resets_entry_when_opening_a_different_source(
+    graph_callback,
+    monkeypatch,
+    trigger,
+    file_path,
+    source_mode,
+    source_request,
+):
+    """Path, URL, and Browse sources should start at entry zero."""
+    monkeypatch.setattr(callback_module, "ctx", SimpleNamespace(triggered_id=trigger))
+    current = {"file_path": "/tmp/current.h5", "entry": 1, "use_run": False}
+
+    result = graph_callback(
+        **graph_arguments(
+            file_path=file_path,
+            source_mode=source_mode,
+            source_request=source_request,
+            entry=1,
+            loaded_event=current,
+        )
+    )
+    assert result[1] == 0
+    assert result[14]["file_path"] == (
+        source_request["file_path"] if source_request else file_path
+    )
+
+
+def test_graph_preserves_entry_when_reopening_the_same_source(
+    graph_callback, monkeypatch
+):
+    """Reopening the active source should preserve an explicit entry."""
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+    current = {"file_path": "/tmp/current.h5", "entry": 1, "use_run": False}
+
+    result = graph_callback(
+        **graph_arguments(
+            file_path="/tmp/current.h5",
+            entry=1,
+            loaded_event=current,
+        )
+    )
+    assert result[1] == 1
 
 
 def test_graph_callback_renders_webgl_and_plotly(graph_callback, monkeypatch):
@@ -1993,9 +2314,10 @@ def test_graph_callback_fast_refresh_shortcuts(graph_callback, monkeypatch):
         ("access", "Access denied"),
         ("classify", "Could not open source"),
         ("manifest", "manifest denied"),
+        ("manifest-inspect", "Could not inspect source manifest"),
         ("view", "Could not load shared view"),
         ("missing", "File(s) not found"),
-        ("reader", "reader exploded"),
+        ("reader", "Could not initialize the source:\nRuntimeError: reader exploded"),
         ("load", "Could not load the selected event"),
     ],
 )
@@ -2026,6 +2348,18 @@ def test_graph_callback_reports_source_pipeline_failures(
             callback_module,
             "validate_manifest_access",
             lambda path: (False, "manifest denied"),
+        )
+    elif failure == "manifest-inspect":
+        monkeypatch.setattr(
+            callback_module, "classify_source", lambda path: ("manifest", path)
+        )
+        monkeypatch.setattr(
+            callback_module, "validate_manifest_access", lambda path: (True, None)
+        )
+        monkeypatch.setattr(
+            callback_module,
+            "classify_reader_source",
+            lambda path: (_ for _ in ()).throw(ValueError("mixed inputs")),
         )
     elif failure == "view":
         monkeypatch.setattr(

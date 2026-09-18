@@ -5,7 +5,9 @@ import pytest
 from spinal_tap import app
 from spinal_tap.callbacks import validate_file_access
 from spinal_tap.utils import (
+    _validate_larcv_schema_trees,
     canonicalize_data_path,
+    classify_reader_source,
     classify_source,
     clear_data_caches,
     get_data_cache_info,
@@ -13,11 +15,30 @@ from spinal_tap.utils import (
     get_file_signature,
     get_reader_products,
     initialize_reader,
+    is_remote_root_hint,
     load_data,
     resolve_data_path,
     resolve_reader_keys,
     resolve_source_path,
 )
+
+
+@pytest.mark.parametrize(
+    "source,expected",
+    [
+        ("https://example.org/events.root", True),
+        ("https://example.org/events.ROOT?token=abc#entry", True),
+        ("http://example.org/a%2Eroot", True),
+        ("https://example.org/events.h5", False),
+        ("/tmp/events.root", False),
+        ("events.root", False),
+        ("not a URL", False),
+        ("https://[invalid/events.root", False),
+    ],
+)
+def test_remote_root_hint(source, expected):
+    """Only HTTP(S) URL paths ending in .root should prompt before download."""
+    assert is_remote_root_hint(source) is expected
 
 
 def test_get_reader_products_uses_writer_configuration():
@@ -126,6 +147,237 @@ def test_initialize_reader_cache_invalidates_on_file_change(monkeypatch, tmp_pat
     assert third is not first
     assert len(calls) == 2
     clear_data_caches()
+
+
+def test_initialize_larcv_reader_requires_conversion_bundle(tmp_path):
+    """LArCV input should explain how to supply its parser schema."""
+    path = tmp_path / "events.data"
+    path.write_bytes(b"root" + bytes(32))
+
+    clear_data_caches()
+    with pytest.raises(ValueError, match="SPINAL_TAP_LARCV_CONFIG"):
+        initialize_reader(str(path))
+    clear_data_caches()
+
+
+def test_initialize_larcv_reader_uses_spine_prod_bundle(monkeypatch, tmp_path):
+    """A conversion bundle should configure parsing and the reader adapter."""
+    from spine.geo import GeoManager
+    from spine.io import dataset as dataset_module
+
+    path = tmp_path / "events.data"
+    path.write_bytes(b"root" + bytes(32))
+    config_path = tmp_path / "truth.yaml"
+    config_path.write_text("placeholder")
+    calls = []
+
+    cfg = {
+        "base": {"dtype": "float32"},
+        "geo": {"detector": "2x2"},
+        "build": {
+            "mode": "truth",
+            "fragments": False,
+            "particles": True,
+            "interactions": True,
+        },
+        "io": {
+            "loader": {
+                "dataset": {
+                    "name": "larcv",
+                    "file_keys": None,
+                    "schema": {
+                        "run_info": {
+                            "parser": "run_info",
+                            "sparse_event": "sparse3d_data",
+                        },
+                        "particles": {
+                            "parser": "particle",
+                            "particle_event": "particle_data",
+                        },
+                    },
+                }
+            },
+            "writer": {
+                "keys": [
+                    "run_info",
+                    "meta",
+                    "points_label",
+                    "truth_particles",
+                    "truth_interactions",
+                ]
+            },
+        },
+    }
+
+    class BackendReader:
+        file_paths = [str(path)]
+        entry_index = [0, 1]
+        run_info = [(1, 2, 3), (1, 2, 4)]
+
+        def get_run_event_index(self, run, subrun, event):
+            return self.run_info.index((run, subrun, event))
+
+    class Dataset:
+        reader = BackendReader()
+        data_keys = ("index", "run_info", "particles")
+
+        def __init__(self, **kwargs):
+            calls.append(kwargs)
+
+        def __len__(self):
+            return 2
+
+        def __getitem__(self, idx):
+            return {"index": idx}
+
+    monkeypatch.setattr("spine.config.load_config_file", lambda *args, **kwargs: cfg)
+    geometry_calls = []
+    monkeypatch.setattr(
+        GeoManager,
+        "initialize_or_get",
+        lambda **kwargs: geometry_calls.append(kwargs),
+    )
+    monkeypatch.setattr(dataset_module, "LArCVDataset", Dataset)
+    monkeypatch.setattr(
+        "spinal_tap.utils._validate_larcv_schema_trees", lambda *args: None
+    )
+
+    clear_data_caches()
+    reader = initialize_reader(str(path), use_run=True, larcv_config=str(config_path))
+
+    assert len(reader) == 2
+    assert reader.get(1) == {"index": 1}
+    assert reader.get_run_event_index(1, 2, 4) == 1
+    assert reader.is_remote_path(str(path)) is False
+    assert reader.cfg is cfg
+    assert geometry_calls == [{"detector": "2x2"}]
+    assert get_reader_products(reader) == {
+        "run_info",
+        "meta",
+        "points_label",
+        "truth_particles",
+        "truth_interactions",
+    }
+    assert calls == [
+        {
+            "file_keys": str(path),
+            "schema": cfg["io"]["loader"]["dataset"]["schema"],
+            "dtype": "float32",
+            "create_run_map": True,
+            "run_info_key": "sparse3d_data",
+        }
+    ]
+    clear_data_caches()
+
+
+def test_validate_larcv_schema_trees_reports_converter_mismatch(monkeypatch):
+    """Missing converter inputs should be reported before TChain creation."""
+    from spine.config import factory
+    from spine.utils import conditional
+
+    closed = []
+
+    class Parser:
+        tree_keys = ("sparse3d_data", "opflash_light")
+
+    class Key:
+        def __init__(self, name):
+            self.name = name
+
+        def GetName(self):
+            return self.name
+
+    class RootFile:
+        def __init__(self, names, zombie=False):
+            self.names = names
+            self.zombie = zombie
+
+        def IsZombie(self):
+            return self.zombie
+
+        def GetListOfKeys(self):
+            return [Key(name) for name in self.names]
+
+        def Close(self):
+            closed.append(self)
+
+    files = {
+        "/data/good.root": RootFile(["sparse3d_data_tree", "opflash_light_tree"]),
+        "/data/bad.root": RootFile(["sparse3d_data_tree"]),
+        "/data/zombie.root": RootFile([], zombie=True),
+        "/data/unreadable.root": None,
+    }
+    root = type(
+        "Root",
+        (),
+        {"TFile": type("TFile", (), {"Open": staticmethod(files.get)})},
+    )
+    monkeypatch.setattr(factory, "instantiate", lambda *args, **kwargs: Parser())
+    monkeypatch.setattr(conditional, "ROOT", root)
+    schema = {"data": {"parser": "sparse3d"}}
+
+    _validate_larcv_schema_trees(("/data/good.root",), schema, "float32")
+    with pytest.raises(ValueError, match="bad.root: opflash_light_tree"):
+        _validate_larcv_schema_trees(("/data/bad.root",), schema, "float32")
+    with pytest.raises(OSError, match="zombie.root"):
+        _validate_larcv_schema_trees(("/data/zombie.root",), schema, "float32")
+    with pytest.raises(OSError, match="unreadable.root"):
+        _validate_larcv_schema_trees(("/data/unreadable.root",), schema, "float32")
+    assert closed == [
+        files["/data/good.root"],
+        files["/data/bad.root"],
+        files["/data/zombie.root"],
+    ]
+
+
+def test_initialize_larcv_reader_requires_run_info(monkeypatch, tmp_path):
+    """Run-based navigation should reject schemas without a run-info source."""
+    path = tmp_path / "events.root"
+    path.write_bytes(b"root" + bytes(32))
+    config_path = tmp_path / "truth.yaml"
+    config_path.write_text("placeholder")
+    cfg = {
+        "io": {
+            "loader": {"dataset": {"name": "larcv", "schema": {}}},
+            "writer": {"keys": []},
+        }
+    }
+    monkeypatch.setattr("spine.config.load_config_file", lambda *args, **kwargs: cfg)
+
+    clear_data_caches()
+    with pytest.raises(ValueError, match="no run-info source"):
+        initialize_reader(str(path), use_run=True, larcv_config=str(config_path))
+    clear_data_caches()
+
+
+def test_initialize_reader_rejects_mixed_larcv_collection(tmp_path):
+    """One manifest cannot combine already-converted and raw event files."""
+    import h5py
+
+    converted = tmp_path / "converted.h5"
+    with h5py.File(converted, "w") as output:
+        output.create_dataset("events", data=[0])
+    raw = tmp_path / "raw.root"
+    raw.write_bytes(b"root" + bytes(32))
+    manifest = tmp_path / "mixed.list"
+    manifest.write_text(f"{converted.name}\n{raw.name}\n")
+
+    clear_data_caches()
+    with pytest.raises(ValueError, match="cannot mix HDF5 and LArCV"):
+        initialize_reader(str(manifest))
+    clear_data_caches()
+
+
+def test_classify_reader_source_resolves_larcv_manifest(tmp_path):
+    """A homogeneous ROOT manifest should expose its effective reader kind."""
+    first = tmp_path / "first.root"
+    second = tmp_path / "second.root"
+    first.write_bytes(b"root" + bytes(32))
+    second.write_bytes(b"root" + bytes(32))
+    manifest = tmp_path / "events.list"
+    manifest.write_text(f"{first.name}\n{second.name}\n")
+
+    assert classify_reader_source(str(manifest)) == "larcv"
 
 
 @pytest.mark.parametrize("detector", ["2x2", "2x2-single", "ND-LAr", "fsd"])
@@ -261,6 +513,75 @@ def test_load_data_returns_run_metadata(monkeypatch):
     assert (run, subrun, event) == (1, 2, 3)
     assert calls == [((False, True, True), {"mode": "truth"})]
     assert get_data_cache_info()["events"].currsize == 1
+    clear_data_caches()
+
+
+def test_load_data_builds_larcv_interactions_for_particle_vertices(monkeypatch):
+    """LArCV particle views should build interactions required by vertices."""
+
+    class Reader:
+        backend = "larcv"
+        cfg = {
+            "build": {"mode": "truth"},
+            "geo": {"detector": "2x2"},
+            "io": {"writer": {"keys": ["truth_particles", "truth_interactions"]}},
+        }
+
+        def get(self, entry):
+            return {"index": entry}
+
+    calls = []
+
+    class Builder:
+        def __init__(self, *args, **kwargs):
+            calls.append((args, kwargs))
+
+        def __call__(self, data):
+            pass
+
+    clear_data_caches()
+    monkeypatch.setattr("spinal_tap.utils.BuildManager", Builder)
+    load_data(Reader(), 0, "both", "particles")
+
+    assert calls == [((False, True, True), {"mode": "truth"})]
+    clear_data_caches()
+
+
+def test_load_data_closes_larcv_fragment_build_dependencies(monkeypatch):
+    """LArCV fragment views should retain particle/interaction dependencies."""
+
+    class Reader:
+        backend = "larcv"
+        cfg = {
+            "build": {"mode": "truth"},
+            "io": {
+                "writer": {
+                    "keys": [
+                        "truth_fragments",
+                        "truth_particles",
+                        "truth_interactions",
+                    ]
+                }
+            },
+        }
+
+        def get(self, entry):
+            return {"index": entry}
+
+    calls = []
+
+    class Builder:
+        def __init__(self, *args, **kwargs):
+            calls.append((args, kwargs))
+
+        def __call__(self, data):
+            pass
+
+    clear_data_caches()
+    monkeypatch.setattr("spinal_tap.utils.BuildManager", Builder)
+    load_data(Reader(), 0, "truth", "fragments")
+
+    assert calls == [((True, True, True), {"mode": "truth"})]
     clear_data_caches()
 
 

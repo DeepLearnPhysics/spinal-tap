@@ -12,6 +12,11 @@ Spinal Tap is a Dash application that provides simple visualization tools for
 the Scalable Particle Imaging With Neural Embeddings
 ([SPINE](https://github.com/DeepLearnPhysics/spine)) package.
 
+The standard installation and container remain lean and read SPINE HDF5 files.
+An optional LArCV container adds ROOT, LArCV2, and maintained
+[`spine-prod`](https://github.com/DeepLearnPhysics/spine-prod) detector
+conversion bundles so raw LArCV ROOT files can be visualized directly.
+
 
 ## Installation
 
@@ -85,10 +90,24 @@ Docker images are automatically built and published to GitHub Container Registry
 docker pull ghcr.io/deeplearnphysics/spinal-tap:latest
 ```
 
+Use the separate LArCV flavor only when direct ROOT input is needed:
+
+```bash
+docker pull ghcr.io/deeplearnphysics/spinal-tap:larcv
+```
+
 To run locally with Docker:
 
 ```bash
 docker run -p 8888:8888 ghcr.io/deeplearnphysics/spinal-tap:latest
+```
+
+For LArCV input, run the LArCV image, mount the source data, and select the
+matching dated detector converter in the **Data** panel:
+
+```bash
+docker run --rm -p 8888:8888 -v /host/data:/data:ro \
+  ghcr.io/deeplearnphysics/spinal-tap:larcv
 ```
 
 ## Development & CI/CD

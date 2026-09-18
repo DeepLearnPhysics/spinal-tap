@@ -6,11 +6,13 @@ from functools import lru_cache
 from pathlib import Path
 from threading import RLock
 from typing import Any, Dict, Iterable, Optional, Tuple
+from urllib.parse import unquote, urlsplit
 
 from spine.constants import NuInteractionScheme
 from spine.construct import BuildManager
 from spine.io.read import HDF5Reader
 
+from .converters import resolve_larcv_converter
 from .source import detect_source_file, read_file_manifest
 
 S3DF_DATA_ROOT = "/sdf/data/neutrino"
@@ -20,6 +22,55 @@ EVENT_CACHE_SIZE = int(os.getenv("SPINAL_TAP_EVENT_CACHE_SIZE", "2"))
 GENIE_INTERACTION_DETECTORS = frozenset({"2x2", "2x2-single", "nd-lar", "fsd"})
 
 _CACHE_LOCK = RLock()
+
+
+def is_remote_root_hint(source: str) -> bool:
+    """Return whether an HTTP(S) URL advertises a ROOT file in its path.
+
+    This is only a UI hint used to request a LArCV converter before a remote
+    file is downloaded. Source dispatch still validates the cached content.
+    """
+    try:
+        parsed = urlsplit((source or "").strip())
+    except (TypeError, ValueError):
+        return False
+
+    return (
+        parsed.scheme.lower() in {"http", "https"}
+        and bool(parsed.netloc)
+        and unquote(parsed.path).lower().endswith(".root")
+    )
+
+
+class LArCVDataReader:
+    """Expose a parsed LArCV dataset through spinal-tap's reader contract."""
+
+    backend = "larcv"
+
+    def __init__(self, dataset: Any, cfg: dict[str, Any]) -> None:
+        self.dataset = dataset
+        self.reader = dataset.reader
+        self.cfg = cfg
+        self.file_paths = self.reader.file_paths
+        self.entry_index = self.reader.entry_index
+        self.run_info = getattr(self.reader, "run_info", None)
+        self.object_defaults: dict[str, dict[str, Any]] = {}
+
+        writer = cfg.get("io", {}).get("writer", {})
+        self.data_products = set(writer.get("keys", ()))
+
+    def __len__(self) -> int:
+        return len(self.dataset)
+
+    def get(self, idx: int) -> dict[str, Any]:
+        return self.dataset[idx]
+
+    def get_run_event_index(self, run: int, subrun: int, event: int) -> int:
+        return self.reader.get_run_event_index(run, subrun, event)
+
+    @staticmethod
+    def is_remote_path(path: str) -> bool:
+        return HDF5Reader.is_remote_path(path)
 
 
 def _configure_reader_object_defaults(reader: HDF5Reader) -> None:
@@ -41,6 +92,50 @@ def _configure_reader_object_defaults(reader: HDF5Reader) -> None:
     scheme = int(NuInteractionScheme.GENIE if is_genie else NuInteractionScheme.LARSOFT)
     defaults.setdefault("TruthInteraction", {}).setdefault("interaction_scheme", scheme)
     reader.object_defaults = defaults
+
+
+def _validate_larcv_schema_trees(
+    file_keys: tuple[str, ...], schema: dict[str, Any], dtype: str
+) -> None:
+    """Reject a converter/file mismatch before ROOT constructs noisy chains."""
+    from spine.config.factory import instantiate
+    from spine.io.dataset.larcv import PARSER_DICT
+    from spine.utils.conditional import ROOT
+
+    tree_keys = {
+        key
+        for parser_cfg in schema.values()
+        for key in instantiate(
+            PARSER_DICT, parser_cfg, alt_name="parser", dtype=dtype
+        ).tree_keys
+    }
+    required = {f"{key}_tree" for key in tree_keys}
+
+    missing_by_file = []
+    for file_path in file_keys:
+        root_file = ROOT.TFile.Open(file_path, "READ")
+        if not root_file:
+            raise OSError(f"Could not open LArCV ROOT file: {file_path}")
+        try:
+            if root_file.IsZombie():
+                raise OSError(f"Could not open LArCV ROOT file: {file_path}")
+            available = {key.GetName() for key in root_file.GetListOfKeys()}
+            missing = sorted(required - available)
+            if missing:
+                missing_by_file.append((file_path, missing))
+        finally:
+            root_file.Close()
+
+    if missing_by_file:
+        details = "; ".join(
+            f"{Path(file_path).name}: {', '.join(missing)}"
+            for file_path, missing in missing_by_file
+        )
+        raise ValueError(
+            "The selected LArCV converter is incompatible with the source. "
+            f"Missing required tree(s): {details}. Choose a converter matching "
+            "this detector and production."
+        )
 
 
 def canonicalize_data_path(file_path: str) -> str:
@@ -161,6 +256,54 @@ def _initialize_reader_cached(
     return reader
 
 
+@lru_cache(maxsize=READER_CACHE_SIZE)
+def _initialize_larcv_reader_cached(
+    file_keys: tuple[str, ...],
+    use_run: bool,
+    file_signature: tuple[tuple[str, int, int], ...],
+    config_path: str,
+) -> LArCVDataReader:
+    """Construct one parsed LArCV reader for an unchanged source/config pair."""
+    del file_signature
+
+    from spine.config import load_config_file
+    from spine.geo import GeoManager
+    from spine.io.dataset import LArCVDataset
+
+    cfg = load_config_file(config_path, download=False)
+    if "geo" in cfg:
+        GeoManager.initialize_or_get(**cfg["geo"])
+    dataset_cfg = dict(cfg["io"]["loader"]["dataset"])
+    dataset_cfg.pop("name", None)
+    dataset_cfg.pop("file_keys", None)
+
+    schema = dataset_cfg.pop("schema")
+    dtype = cfg.get("base", {}).get("dtype", "float32")
+    run_info_key = None
+    if use_run:
+        run_cfg = schema.get("run_info", {})
+        run_info_key = run_cfg.get("sparse_event")
+        if run_info_key is None:
+            raise ValueError(
+                "The selected LArCV conversion schema has no run-info source."
+            )
+
+    _validate_larcv_schema_trees(file_keys, schema, dtype)
+
+    keys: str | list[str] = file_keys[0] if len(file_keys) == 1 else list(file_keys)
+    dataset = LArCVDataset(
+        file_keys=keys,
+        schema=schema,
+        dtype=dtype,
+        create_run_map=use_run,
+        run_info_key=run_info_key,
+        **dataset_cfg,
+    )
+    reader = LArCVDataReader(dataset, cfg)
+    _configure_reader_object_defaults(reader)
+    return reader
+
+
 def resolve_source_path(source: str) -> str:
     """Materialize a URL or resolve an equivalent local data path."""
     if source.strip().startswith(("http://", "https://")):
@@ -207,10 +350,28 @@ def resolve_reader_keys(source: str) -> tuple[tuple[str, ...], tuple]:
     return keys, get_file_signature(keys)
 
 
-def initialize_reader(file_path: str, use_run: bool = False) -> HDF5Reader:
-    """Initialize the HDF5 reader.
+def _classify_reader_keys(file_keys: tuple[str, ...]) -> str:
+    """Return the common data kind for resolved reader inputs."""
+    source_kinds = {
+        detect_source_file(path) for path in file_keys if os.path.isfile(path)
+    }
+    if len(source_kinds) > 1:
+        raise ValueError("A source collection cannot mix HDF5 and LArCV files.")
+    return next(iter(source_kinds), "hdf5")
 
-    TODO: add option to read from LArCV files (more tricky)
+
+def classify_reader_source(source: str) -> str:
+    """Return the effective data kind behind an exact source or manifest."""
+    file_keys, _ = resolve_reader_keys(source)
+    return _classify_reader_keys(file_keys)
+
+
+def initialize_reader(
+    file_path: str,
+    use_run: bool = False,
+    larcv_config: str | None = None,
+) -> HDF5Reader | LArCVDataReader:
+    """Initialize an HDF5 reader or a configured LArCV parser dataset.
 
     Parameters
     ----------
@@ -221,17 +382,32 @@ def initialize_reader(file_path: str, use_run: bool = False) -> HDF5Reader:
 
     Returns
     -------
-    HDF5Reader
+    HDF5Reader or LArCVDataReader
         File reader
     """
     file_keys, signature = resolve_reader_keys(file_path)
 
+    source_kind = _classify_reader_keys(file_keys)
+
     # Reader construction and persistent HDF5 handles are shared per process
     with _CACHE_LOCK:
+        if source_kind == "larcv":
+            config_path = larcv_config or os.getenv("SPINAL_TAP_LARCV_CONFIG")
+            if not config_path:
+                raise ValueError(
+                    "LArCV input requires a spine-prod conversion bundle. Set "
+                    "SPINAL_TAP_LARCV_CONFIG or select a detector converter."
+                )
+            return _initialize_larcv_reader_cached(
+                file_keys,
+                use_run,
+                signature,
+                resolve_larcv_converter(config_path),
+            )
         return _initialize_reader_cached(file_keys, use_run, signature)
 
 
-def get_reader_products(reader: HDF5Reader) -> set[str]:
+def get_reader_products(reader: HDF5Reader | LArCVDataReader) -> set[str]:
     """Return the event products advertised by a SPINE reader configuration.
 
     Parameters
@@ -244,6 +420,9 @@ def get_reader_products(reader: HDF5Reader) -> set[str]:
     set[str]
         Product names expected in each event.
     """
+    if hasattr(reader, "data_products"):
+        return set(reader.data_products)
+
     cfg = reader.cfg or {}
     writer = cfg.get("io", {}).get("writer", {})
     products = set(writer.get("keys", []))
@@ -337,11 +516,20 @@ def _load_data(reader: HDF5Reader, entry: int, mode: str, obj: str) -> Tuple[
     data = reader.get(entry)
 
     # Initialize the builder
+    build_mode = mode
+    if getattr(reader, "backend", None) == "larcv":
+        build_mode = reader.cfg.get("build", {}).get("mode", mode)
+
+    is_larcv = getattr(reader, "backend", None) == "larcv"
+    build_interactions = obj == "interactions" or (
+        is_larcv and "truth_interactions" in get_reader_products(reader)
+    )
+    build_particles = obj in ["particles", "interactions"] or build_interactions
     builder = BuildManager(
         obj == "fragments",
-        obj in ["particles", "interactions"],
-        obj == "interactions",
-        mode=mode,
+        build_particles,
+        build_interactions,
+        mode=build_mode,
     )
 
     # Process the entry through the builder
@@ -367,11 +555,13 @@ def clear_data_caches() -> None:
     with _CACHE_LOCK:
         _load_data_cached.cache_clear()
         _initialize_reader_cached.cache_clear()
+        _initialize_larcv_reader_cached.cache_clear()
 
 
 def get_data_cache_info() -> dict[str, Any]:
     """Return process-local reader and event cache statistics."""
     return {
         "readers": _initialize_reader_cached.cache_info(),
+        "larcv_readers": _initialize_larcv_reader_cached.cache_info(),
         "events": _load_data_cached.cache_info(),
     }

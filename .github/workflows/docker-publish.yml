@@ -15,8 +15,18 @@ env:
 
 jobs:
   build-and-push:
-    name: Build Docker image
+    name: Build ${{ matrix.variant }} Docker image
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: lean
+            dockerfile: docker/Dockerfile
+            suffix: ''
+          - variant: larcv
+            dockerfile: docker/Dockerfile.larcv
+            suffix: '-larcv'
     permissions:
       contents: read
       packages: write
@@ -40,16 +50,18 @@ jobs:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
         tags: |
           # For PRs, just tag with pr-number (don't push)
-          type=ref,event=pr
-          # For version tags: v0.1.1 -> 0.1.1, 0.1, latest
-          type=semver,pattern={{version}}
-          type=semver,pattern={{major}}.{{minor}}
-          type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+          type=ref,event=pr,suffix=${{ matrix.suffix }}
+          # Lean: 1.2.0, 1.2, latest. LArCV: 1.2.0-larcv, 1.2-larcv, larcv.
+          type=semver,pattern={{version}},suffix=${{ matrix.suffix }}
+          type=semver,pattern={{major}}.{{minor}},suffix=${{ matrix.suffix }}
+          type=raw,value=latest,enable=${{ matrix.variant == 'lean' && startsWith(github.ref, 'refs/tags/v') }}
+          type=raw,value=larcv,enable=${{ matrix.variant == 'larcv' && startsWith(github.ref, 'refs/tags/v') }}
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
         context: .
+        file: ${{ matrix.dockerfile }}
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

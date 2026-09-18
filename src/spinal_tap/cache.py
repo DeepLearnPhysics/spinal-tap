@@ -72,6 +72,12 @@ class CacheManager:
         """Create the private cache root when it is first needed."""
         self.root.mkdir(mode=0o700, parents=True, exist_ok=True)
 
+    @staticmethod
+    def _refresh_access(path: Path) -> None:
+        """Refresh cache retention without changing the content signature."""
+        stat = path.stat()
+        os.utime(path, ns=(time.time_ns(), stat.st_mtime_ns))
+
     def session_root(self, session_id: str | None = None) -> Path:
         """Return and create the private directory for one browser session."""
         self.ensure_root()
@@ -87,7 +93,7 @@ class CacheManager:
             owned = path.is_file() and path.is_relative_to(root)
             if owned:
                 # Keep sources which are still being viewed from expiring.
-                os.utime(path, None)
+                self._refresh_access(path)
             return owned
         except (OSError, RuntimeError, ValueError):
             return False
@@ -99,7 +105,7 @@ class CacheManager:
         with self._lock:
             for path in self.root.glob("*/*"):
                 try:
-                    if path.stat().st_mtime < cutoff:
+                    if path.stat().st_atime < cutoff:
                         path.unlink()
                 except FileNotFoundError:
                     pass
@@ -242,7 +248,7 @@ class CacheManager:
         root = self.session_root("url")
         final_path = root / f"{url_id}-{filename}"
         if final_path.is_file():
-            os.utime(final_path, None)
+            self._refresh_access(final_path)
             return str(final_path)
 
         part_path = root / f".{url_id}-{secrets.token_urlsafe(8)}.part"

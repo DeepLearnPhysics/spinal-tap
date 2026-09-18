@@ -16,8 +16,9 @@ arrows to load entries.
      - Use it for
      - Behavior
    * - Path
-     - A path or glob visible to the server.
-     - Opens the host file directly without copying it.
+     - A server-visible path or glob, or a public HTTP(S) URL.
+     - Opens paths directly. Downloads URLs into the bounded temporary cache
+       before opening them.
    * - Browse
      - A local file selected with the operating-system picker.
      - Transfers the selected file into a private temporary cache. This label
@@ -25,11 +26,9 @@ arrows to load entries.
    * - Upload
      - A workstation file sent to an authenticated hosted deployment.
      - Uses the same private temporary cache as Browse, in retryable chunks.
-   * - URL
-     - A public HTTP or HTTPS source.
-     - Downloads the source into the bounded temporary cache before opening it.
 
-Pressing Enter in a Path or URL field performs the same action as **Open**.
+The Path field also accepts public URLs. Pressing Enter performs the same action
+as **Open**.
 Pressing Enter in the event selector performs the same action as **Go**.
 
 Accepted source documents
@@ -38,8 +37,40 @@ Accepted source documents
 Spinal Tap identifies exact files by content rather than extension. It accepts:
 
 * SPINE HDF5 output;
+* LArCV2 ROOT input when running the LArCV container flavor;
 * a saved Spinal Tap view JSON document; or
 * a UTF-8 file manifest.
+
+LArCV conversion bundles
+------------------------
+
+LArCV tree names and detector geometry are producer-specific. Open a ROOT
+source first; after Spinal Tap detects its content, it reveals **LArCV
+converter** beneath the Open button and waits for a matching dated bundle.
+Selecting the bundle resumes the load automatically and dismisses the chooser.
+When a detector has multiple bundles, their labels include compatibility tags
+maintained by ``spine-prod``, such as cryostat layout, CRT availability, and
+optical-system generation.
+For a remote URL whose path ends in ``.root``, the chooser appears immediately
+and the download begins only after selection, with progress reported by the
+standard status indicator. The suffix is only an early UI hint: Spinal Tap
+still validates the downloaded content. Extensionless remote sources must be
+downloaded before their type can be detected. The control stays hidden for
+other source types.
+Spinal Tap then parses and builds the SPINE truth representation in memory; it
+does not write an intermediate HDF5 file. A manifest may contain several LArCV
+files that use the same bundle, but it cannot mix LArCV and HDF5 files.
+
+Detector conversion knowledge is maintained in ``spine-prod`` and copied into
+the LArCV image at build time. Install an additional configuration tree by
+setting ``SPINAL_TAP_LARCV_CONFIG_ROOT`` (or ``SPINE_CONFIG_PATH``) to its
+``config`` directory. ``SPINAL_TAP_LARCV_CONFIG`` can set a default converter
+ID or an explicit bundle path for non-interactive deployments.
+
+Spinal Tap intentionally does not guess a detector or schema from tree names:
+different production vintages can use overlapping names with different
+semantics. If a bundle reports missing trees, select the matching vintage or
+add the required variant in ``spine-prod``.
 
 A manifest contains one source path per line. Blank lines and records beginning
 with ``#`` are ignored. Relative records are resolved beside the manifest, and

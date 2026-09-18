@@ -1,0 +1,40 @@
+# syntax=docker/dockerfile:1
+
+ARG LARCV_TAG=runtime-ubuntu24.04
+ARG SPINE_PROD_REF=3cb7ff9ac5fb1baf1a5958bc67e36be616adab52
+
+FROM alpine:3.22 AS configs
+ARG SPINE_PROD_REF
+ADD https://github.com/DeepLearnPhysics/spine-prod/archive/${SPINE_PROD_REF}.tar.gz /tmp/spine-prod.tar.gz
+RUN mkdir -p /opt/spine-prod && \
+    tar -xzf /tmp/spine-prod.tar.gz --strip-components=1 -C /opt/spine-prod
+
+FROM ghcr.io/deeplearnphysics/larcv2:${LARCV_TAG}
+
+USER root
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    SPINE_CONFIG_PATH=/opt/spine-prod/config
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends python3-pip && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml MANIFEST.in README.md ./
+COPY src/ ./src/
+
+# Keep the NumPy ABI used to compile LArCV's PyUtil bridge. Declaring the exact
+# already-installed version prevents pip from trying to replace the Debian
+# package with a newer, independently built NumPy wheel.
+RUN pip3 install "numpy==1.26.4" .
+
+COPY --from=configs /opt/spine-prod/config /opt/spine-prod/config
+
+EXPOSE 8888
+ENTRYPOINT ["spinal-tap"]
+CMD ["--host", "0.0.0.0", "--port", "8888"]

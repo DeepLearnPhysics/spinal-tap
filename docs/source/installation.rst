@@ -62,7 +62,21 @@ Released images are published to the GitHub Container Registry:
    docker run --rm -p 8888:8888 \
      ghcr.io/deeplearnphysics/spinal-tap:latest
 
-Mount data into the container when using **Path** sources:
+The default image is the lean SPINE HDF5 viewer and does not include ROOT or
+LArCV. A separate image supports direct LArCV ROOT input:
+
+.. code-block:: bash
+
+   docker pull ghcr.io/deeplearnphysics/spinal-tap:larcv
+   docker run --rm -p 8888:8888 \
+     -v /host/data:/data:ro \
+     ghcr.io/deeplearnphysics/spinal-tap:larcv
+
+Release-specific tags use ``<version>-larcv``. The LArCV image includes the
+ROOT/LArCV runtime and versioned detector conversion bundles from
+``spine-prod``; the Python package and default image deliberately do not.
+
+Mount data into the container when using local **Path** sources:
 
 .. code-block:: bash
 

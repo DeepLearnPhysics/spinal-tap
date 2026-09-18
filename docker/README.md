@@ -1,11 +1,31 @@
 # Docker Image Build Strategy
 
+## Repository Layout
+
+All container-specific build files live in this directory:
+
+- `Dockerfile` builds the lean SPINE HDF5 viewer.
+- `Dockerfile.larcv` builds the optional ROOT/LArCV flavor.
+- `run.sh` builds and starts the lean image for local development.
+
+Both Dockerfiles use the repository root as their build context:
+
+```bash
+docker build -f docker/Dockerfile -t spinal-tap:local .
+docker build -f docker/Dockerfile.larcv -t spinal-tap:larcv-local .
+```
+
+The shared `.dockerignore` remains at the repository root because Docker reads
+it from the build-context root, not from the Dockerfile directory.
+
 ## Build Triggers
 
 The Docker image is built and published **only when**:
 
 1. **A version tag is pushed** (e.g., `v0.1.1`, `v1.0.0`)
-   - Creates versioned tags: `0.1.1`, `0.1`, and `latest`
+   - Builds both the lean and LArCV image flavors
+   - Creates lean tags: `0.1.1`, `0.1`, and `latest`
+   - Creates LArCV tags: `0.1.1-larcv`, `0.1-larcv`, and `larcv`
    
 2. **Pull requests** (for testing only)
    - Builds the image but doesn't push to registry
@@ -32,12 +52,16 @@ When you create a tag like `v0.1.1`:
 ghcr.io/deeplearnphysics/spinal-tap:0.1.1    (full version)
 ghcr.io/deeplearnphysics/spinal-tap:0.1      (minor version)
 ghcr.io/deeplearnphysics/spinal-tap:latest   (latest release)
+ghcr.io/deeplearnphysics/spinal-tap:0.1.1-larcv (LArCV full version)
+ghcr.io/deeplearnphysics/spinal-tap:0.1-larcv   (LArCV minor version)
+ghcr.io/deeplearnphysics/spinal-tap:larcv       (latest LArCV release)
 ```
 
 Benefits:
 - Users can pin to exact version: `image: spinal-tap:0.1.1`
 - Users can auto-update minor versions: `image: spinal-tap:0.1`
 - Users can always get latest: `image: spinal-tap:latest`
+- ROOT/LArCV dependencies remain isolated in the `-larcv`/`larcv` flavor
 
 ## Automatic Cleanup
 
@@ -55,12 +79,9 @@ The workflow includes automatic cleanup:
 - ✅ For public packages: **No practical limit**
 
 ### Image Size Optimization:
-Our Dockerfile uses:
-- **Python slim base** (~150MB vs 1GB for full Python)
-- **Multi-stage builds** would further reduce size (can add if needed)
-- **Layer caching** - Only changed layers are rebuilt
-
-Current estimated image size: **~500MB - 1GB** (depending on spine dependencies)
+The lean Dockerfile uses a Python slim base and remains free of ROOT and LArCV.
+The optional multi-stage LArCV Dockerfile starts from the dedicated
+LArCV runtime image and copies only the `spine-prod` configuration tree.
 
 ## Workflow Summary
 
@@ -69,9 +90,10 @@ Developer creates tag v0.1.1
     ↓
 GitHub Action triggered
     ↓
-Build Docker image
+Build lean and LArCV Docker images
     ↓
-Push with tags: 0.1.1, 0.1, latest
+Push lean tags: 0.1.1, 0.1, latest
+Push LArCV tags: 0.1.1-larcv, 0.1-larcv, larcv
     ↓
 Cleanup old untagged images
     ↓
