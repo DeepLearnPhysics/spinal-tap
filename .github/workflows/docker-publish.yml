@@ -48,6 +48,10 @@ jobs:
       uses: docker/metadata-action@v5
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        flavor: |
+          # Semver sources otherwise generate :latest implicitly for every
+          # matrix variant. Moving tags are assigned explicitly below.
+          latest=false
         tags: |
           # For PRs, just tag with pr-number (don't push)
           type=ref,event=pr,suffix=${{ matrix.suffix }}
