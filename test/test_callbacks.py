@@ -1654,11 +1654,77 @@ def test_graph_waits_for_larcv_converter_then_loads(graph_callback, monkeypatch)
             file_path="/tmp/stale.h5",
             larcv_converter="2x2/truth_240819",
             larcv_request=request,
+            entry=1,
+            loaded_event={
+                "file_path": "/tmp/previous.h5",
+                "entry": 1,
+                "use_run": False,
+            },
         )
     )
     assert isinstance(result[0], html.Div)
+    assert result[1] == 0
     assert result[14]["file_path"] == "/tmp/events.root"
     assert result[14]["larcv_converter"] == "2x2/truth_240819"
+
+
+@pytest.mark.parametrize(
+    "trigger,file_path,source_mode,source_request",
+    [
+        ("button-load", "/tmp/next.h5", "path", None),
+        ("button-load", "https://example.org/next.h5", "url", None),
+        (
+            "store-source-request",
+            "/tmp/stale.h5",
+            "path",
+            {"file_path": "/tmp/browsed.h5", "source_mode": "browse"},
+        ),
+    ],
+)
+def test_graph_resets_entry_when_opening_a_different_source(
+    graph_callback,
+    monkeypatch,
+    trigger,
+    file_path,
+    source_mode,
+    source_request,
+):
+    """Path, URL, and Browse sources should start at entry zero."""
+    monkeypatch.setattr(callback_module, "ctx", SimpleNamespace(triggered_id=trigger))
+    current = {"file_path": "/tmp/current.h5", "entry": 1, "use_run": False}
+
+    result = graph_callback(
+        **graph_arguments(
+            file_path=file_path,
+            source_mode=source_mode,
+            source_request=source_request,
+            entry=1,
+            loaded_event=current,
+        )
+    )
+    assert result[1] == 0
+    assert result[14]["file_path"] == (
+        source_request["file_path"] if source_request else file_path
+    )
+
+
+def test_graph_preserves_entry_when_reopening_the_same_source(
+    graph_callback, monkeypatch
+):
+    """Reopening the active source should preserve an explicit entry."""
+    monkeypatch.setattr(
+        callback_module, "ctx", SimpleNamespace(triggered_id="button-load")
+    )
+    current = {"file_path": "/tmp/current.h5", "entry": 1, "use_run": False}
+
+    result = graph_callback(
+        **graph_arguments(
+            file_path="/tmp/current.h5",
+            entry=1,
+            loaded_event=current,
+        )
+    )
+    assert result[1] == 1
 
 
 def test_graph_callback_renders_webgl_and_plotly(graph_callback, monkeypatch):

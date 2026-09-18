@@ -3337,6 +3337,17 @@ def register_callbacks(app):
         # source rather than re-opening the uploaded JSON document.
         file_path = navigation_file_path(file_path, source_mode, trigger, loaded_event)
 
+        # An entry index belongs to the file it was selected from. Start a
+        # genuinely different source at its first entry instead of carrying a
+        # potentially invalid index across from the currently displayed file.
+        opening_source = trigger in SOURCE_OPEN_TRIGGERS or trigger == (
+            "dropdown-larcv-config"
+        )
+        if opening_source and loaded_event and file_path:
+            previous_path = loaded_event.get("file_path")
+            if previous_path != canonicalize_data_path(file_path):
+                entry = 0
+
         # Updating store-entry reflects automatic file geometry into the two
         # dropdowns. Those programmatic value changes do not require another
         # scene build; the navigation callback already drew that geometry.
