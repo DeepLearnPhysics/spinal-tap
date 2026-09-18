@@ -216,7 +216,9 @@ def test_fetch_url_downloads_validates_and_reuses(monkeypatch, tmp_path):
     )
     path = manager.fetch_url("https://example.org/file.h5")
     assert os.path.isfile(path)
+    initial_mtime = os.stat(path).st_mtime_ns
     assert manager.fetch_url("https://example.org/file.h5") == path
+    assert os.stat(path).st_mtime_ns == initial_mtime
     assert opens == [("https://example.org/file.h5", 30)]
 
 
