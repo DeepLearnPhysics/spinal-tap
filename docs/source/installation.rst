@@ -76,7 +76,7 @@ Release-specific tags use ``<version>-larcv``. The LArCV image includes the
 ROOT/LArCV runtime and versioned detector conversion bundles from
 ``spine-prod``; the Python package and default image deliberately do not.
 
-Mount data into the container when using local **Path / URL** sources:
+Mount data into the container when using local **Path** sources:
 
 .. code-block:: bash
 

@@ -273,7 +273,7 @@ def test_local_data_controls_use_native_file_picker():
     entry_mode = component_by_id(controls, "entry-mode")
 
     assert [option["value"] for option in modes.options] == ["path", "browse"]
-    assert modes.options[0]["label"] == "Path / URL"
+    assert modes.options[0]["label"] == "Path"
     assert [option["value"] for option in entry_mode.options] == ["entry", "run"]
     assert all(option["disabled"] for option in entry_mode.options)
     assert component_by_id(controls, "upload-source-file").type == "file"

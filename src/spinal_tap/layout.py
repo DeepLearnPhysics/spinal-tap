@@ -153,7 +153,7 @@ def entry_controls():
     from .app import REQUIRE_AUTH
     from .cache import ALLOW_UPLOADS
 
-    source_options = [{"label": "Path / URL", "value": "path"}]
+    source_options = [{"label": "Path", "value": "path"}]
     if ALLOW_UPLOADS:
         label = "Upload" if REQUIRE_AUTH else "Browse"
         value = "upload" if REQUIRE_AUTH else "browse"

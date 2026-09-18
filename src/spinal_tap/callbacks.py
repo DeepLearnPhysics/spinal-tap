@@ -1784,7 +1784,7 @@ def register_callbacks(app):
 
             // Browse describes how the view definition was imported. Keep it
             // selected, but remember the referenced data source in the combined
-            // Path / URL field where the user expects to find it later.
+            // Path field where the user expects to find it later.
             if (sourceMemory?.values) {
                 sourceMemory.values[dataMode] = state.file;
             }

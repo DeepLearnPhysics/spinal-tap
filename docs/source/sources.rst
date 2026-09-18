@@ -15,7 +15,7 @@ arrows to load entries.
    * - Mode
      - Use it for
      - Behavior
-   * - Path / URL
+   * - Path
      - A server-visible path or glob, or a public HTTP(S) URL.
      - Opens paths directly. Downloads URLs into the bounded temporary cache
        before opening them.
@@ -27,7 +27,8 @@ arrows to load entries.
      - A workstation file sent to an authenticated hosted deployment.
      - Uses the same private temporary cache as Browse, in retryable chunks.
 
-Pressing Enter in the Path / URL field performs the same action as **Open**.
+The Path field also accepts public URLs. Pressing Enter performs the same action
+as **Open**.
 Pressing Enter in the event selector performs the same action as **Go**.
 
 Accepted source documents

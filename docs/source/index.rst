@@ -51,7 +51,7 @@ Install and launch Spinal Tap:
    python -m pip install spinal-tap
    spinal-tap
 
-Open ``http://localhost:8888``, enter an HDF5 path in **Path / URL**, select **Open**,
+Open ``http://localhost:8888``, enter an HDF5 path in **Path**, select **Open**,
 and navigate with **Go** or the left/right arrows. The optional LArCV image can
 open ROOT input after selecting its detector conversion bundle. See
 :doc:`sources` for manifests, uploads, URLs, and shared view JSON files.

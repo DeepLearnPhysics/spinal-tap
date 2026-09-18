@@ -17,9 +17,9 @@ View JSON
 ---------
 
 **Export JSON** downloads the same reproducible view state as a file. Open that
-JSON through Path / URL or Browse/Upload just like any other source. Loading the
-view opens its underlying HDF5 source and applies the saved state once the event
-is available.
+JSON through Path or Browse/Upload just like any other source. The Path field
+also accepts URLs. Loading the view opens its underlying HDF5 source and applies
+the saved state once the event is available.
 
 The view is a starting point rather than a lock: after it loads, normal event
 navigation preserves the user's current camera behavior instead of repeatedly
