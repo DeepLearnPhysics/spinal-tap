@@ -163,101 +163,93 @@ def entry_controls():
     return section(
         "Data",
         [
-            dcc.Loading(
-                html.Div(
-                    [
-                        html.Div(
-                            [
-                                html.Div(
-                                    [
-                                        dcc.Input(
-                                            id="input-file-path",
-                                            type="text",
-                                            value="",
-                                            placeholder=(
-                                                "HDF5, LArCV ROOT, manifest, "
-                                                "view path, or HTTPS URL..."
+            html.Div(
+                [
+                    html.Div(
+                        [
+                            html.Div(
+                                [
+                                    dcc.Input(
+                                        id="input-file-path",
+                                        type="text",
+                                        value="",
+                                        placeholder=(
+                                            "HDF5, LArCV ROOT, manifest, "
+                                            "view path, or HTTPS URL..."
+                                        ),
+                                        disabled=False,
+                                        required=True,
+                                        autoComplete="on",
+                                        n_submit=0,
+                                        className="text-input",
+                                    ),
+                                ],
+                                id="source-path-row",
+                                className="source-path-row",
+                            ),
+                            html.Div(
+                                [
+                                    html.Label(
+                                        [
+                                            html.Span(
+                                                "Choose an HDF5, LArCV ROOT, "
+                                                "manifest, or view file…",
+                                                id="upload-source-status",
+                                                className="source-file-name",
                                             ),
-                                            disabled=False,
-                                            required=True,
-                                            autoComplete="on",
-                                            n_submit=0,
-                                            className="text-input",
-                                        ),
-                                    ],
-                                    id="source-path-row",
-                                    className="source-path-row",
-                                ),
-                                html.Div(
-                                    [
-                                        html.Label(
-                                            [
-                                                html.Span(
-                                                    "Choose an HDF5, LArCV ROOT, "
-                                                    "manifest, or view file…",
-                                                    id="upload-source-status",
-                                                    className="source-file-name",
-                                                ),
-                                                dcc.Input(
-                                                    id="upload-source-file",
-                                                    type="file",
-                                                    className="source-file-input",
-                                                ),
-                                            ],
-                                            className="source-file-picker",
-                                        ),
-                                        html.Progress(
-                                            id="upload-source-progress",
-                                            value="0",
-                                            max="100",
-                                            className="source-upload-progress",
-                                        ),
-                                    ],
-                                    id="source-upload-panel",
-                                    className="source-upload-panel",
-                                    style={"display": "none"},
-                                ),
-                            ],
-                            className="source-input-shell",
-                        ),
-                        html.Button(
-                            id="button-load",
-                            children="Open",
-                            disabled=False,
-                            className="primary-button source-open-button",
-                        ),
-                        html.Div(
-                            [
-                                html.Label(
-                                    "Choose LArCV converter",
-                                    className="field-label",
-                                ),
-                                dcc.Dropdown(
-                                    id="dropdown-larcv-config",
-                                    options=converter_options,
-                                    value=None,
-                                    clearable=True,
-                                    placeholder="Detector conversion bundle…",
-                                    className="control-dropdown",
-                                ),
-                            ],
-                            id="larcv-converter-row",
-                            className="larcv-converter-popover",
-                            hidden=True,
-                        ),
-                        html.Div(
-                            id="source-open-summary",
-                            className="source-open-summary",
-                        ),
-                    ],
-                    className="source-action-row",
-                ),
-                id="source-open-loading",
-                type="circle",
-                color="#f47c13",
-                delay_show=250,
-                parent_className="source-loading-shell",
-                target_components={"larcv-converter-row": "hidden"},
+                                            dcc.Input(
+                                                id="upload-source-file",
+                                                type="file",
+                                                className="source-file-input",
+                                            ),
+                                        ],
+                                        className="source-file-picker",
+                                    ),
+                                    html.Progress(
+                                        id="upload-source-progress",
+                                        value="0",
+                                        max="100",
+                                        className="source-upload-progress",
+                                    ),
+                                ],
+                                id="source-upload-panel",
+                                className="source-upload-panel",
+                                style={"display": "none"},
+                            ),
+                        ],
+                        className="source-input-shell",
+                    ),
+                    html.Button(
+                        id="button-load",
+                        children="Open",
+                        disabled=False,
+                        className="primary-button source-open-button",
+                    ),
+                    html.Div(
+                        [
+                            html.Label(
+                                "Choose LArCV converter",
+                                className="field-label",
+                            ),
+                            dcc.Dropdown(
+                                id="dropdown-larcv-config",
+                                options=converter_options,
+                                value=None,
+                                clearable=True,
+                                placeholder="Detector conversion bundle…",
+                                className="control-dropdown",
+                            ),
+                        ],
+                        id="larcv-converter-row",
+                        className="larcv-converter-popover",
+                        hidden=True,
+                    ),
+                    html.Div(
+                        id="source-open-summary",
+                        className="source-open-summary",
+                    ),
+                ],
+                className="source-action-row",
             ),
             html.Div(
                 [
