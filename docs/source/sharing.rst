@@ -17,7 +17,7 @@ View JSON
 ---------
 
 **Export JSON** downloads the same reproducible view state as a file. Open that
-JSON through Path, Browse/Upload, or URL just like any other source. Loading the
+JSON through Path / URL or Browse/Upload just like any other source. Loading the
 view opens its underlying HDF5 source and applies the saved state once the event
 is available.
 

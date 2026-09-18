@@ -250,7 +250,9 @@ def test_layout_contains_shared_view_controls():
         "run",
     ]
     assert export.disabled is True
-    assert file_path.placeholder == "HDF5, LArCV ROOT, manifest, or view path..."
+    assert file_path.placeholder == (
+        "HDF5, LArCV ROOT, manifest, view path, or HTTPS URL..."
+    )
     assert component_by_id(layout, "upload-view-state") is None
     assert component_by_id(layout, "upload-view-state-data") is None
     assert component_by_id(actions, "share-menu") is None
@@ -270,7 +272,8 @@ def test_local_data_controls_use_native_file_picker():
     modes = component_by_id(controls, "source-mode")
     entry_mode = component_by_id(controls, "entry-mode")
 
-    assert [option["value"] for option in modes.options] == ["path", "browse", "url"]
+    assert [option["value"] for option in modes.options] == ["path", "browse"]
+    assert modes.options[0]["label"] == "Path / URL"
     assert [option["value"] for option in entry_mode.options] == ["entry", "run"]
     assert all(option["disabled"] for option in entry_mode.options)
     assert component_by_id(controls, "upload-source-file").type == "file"
@@ -279,6 +282,9 @@ def test_local_data_controls_use_native_file_picker():
         == "Choose an HDF5, LArCV ROOT, manifest, or view file…"
     )
     assert component_by_id(controls, "dropdown-larcv-config") is not None
+    loading = component_by_id(controls, "source-open-loading")
+    assert loading.target_components == {"larcv-converter-row": "hidden"}
+    assert loading.delay_show == 250
     converter = component_by_id(controls, "larcv-converter-row")
     assert converter.hidden is True
     assert converter.className == "larcv-converter-popover"
@@ -330,7 +336,7 @@ def test_authenticated_data_controls_offer_upload_not_server_browse(monkeypatch)
     controls = main_layout()
     modes = component_by_id(controls, "source-mode")
 
-    assert [option["value"] for option in modes.options] == ["path", "upload", "url"]
+    assert [option["value"] for option in modes.options] == ["path", "upload"]
 
 
 def test_object_filters_live_in_the_viewer_toolbar():

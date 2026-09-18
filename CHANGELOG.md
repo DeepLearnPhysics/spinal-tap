@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - **Docker layout**: Keep both image definitions, the local run helper, and container-build documentation under `docker/`.
 - **Contextual LArCV configuration**: Request a detector converter only after opening a detected ROOT source, leaving the control hidden for other source types.
 - **Source navigation**: Start newly opened files at entry 0 instead of carrying over the previous file's entry index.
+- **Unified source entry**: Accept server paths and public URLs through one Path / URL field and show a delayed loading spinner while remote LArCV content is being identified.
 
 ### Fixed
 - **Particle vertices from LArCV**: Build truth interactions alongside particles so the interaction-vertex overlay works in particle mode.

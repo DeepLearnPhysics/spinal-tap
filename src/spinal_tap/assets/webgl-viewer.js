@@ -2429,7 +2429,7 @@
     function sourceActivity() {
         const mode = document.querySelector("#source-mode input:checked")?.value;
         const source = document.getElementById("input-file-path")?.value?.trim();
-        if (mode === "url" && source) {
+        if (/^https?:\/\//.test(source || "")) {
             try {
                 const url = new URL(source);
                 const name = url.pathname.split("/").filter(Boolean).pop();

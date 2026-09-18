@@ -1774,23 +1774,24 @@ def register_callbacks(app):
             }
 
             const setProps = window.dash_clientside.set_props;
-            const dataMode = /^https?:\/\//.test(state.file) ? 'url' : 'path';
+            const dataMode = 'path';
             const sourceMemory = window.spinalTapSourceState;
+            const importMode = ['browse', 'upload'].includes(state.import_mode)
+                ? state.import_mode : dataMode;
             const offClicks = (linkClicks || 0) % 2
                 ? (linkClicks || 0) + 1
                 : (linkClicks || 0);
 
             // Browse describes how the view definition was imported. Keep it
-            // selected, but remember the referenced data source in the Path or
-            // URL field where the user expects to find it later.
+            // selected, but remember the referenced data source in the combined
+            // Path / URL field where the user expects to find it later.
             if (sourceMemory?.values) {
                 sourceMemory.values[dataMode] = state.file;
-                sourceMemory.values[dataMode === 'url' ? 'path' : 'url'] = '';
             }
             setProps('input-file-path', {value: state.file});
             setProps('input-entry', {value: state.entry ?? 0});
             setProps('source-mode', {
-                value: state.import_mode || dataMode
+                value: importMode
             });
             setProps('entry-mode', {value: 'entry'});
             setProps('input-entry', {
@@ -3897,11 +3898,7 @@ def register_callbacks(app):
                     "num_entries": len(reader),
                     "temporary": temporary_source,
                     "navigation_source_mode": (
-                        (
-                            "url"
-                            if canonical_path.startswith(("http://", "https://"))
-                            else "path"
-                        )
+                        "path"
                         if source_mode in {"browse", "upload"}
                         and trigger in EVENT_NAVIGATION_TRIGGERS
                         else None
@@ -4019,16 +4016,8 @@ def register_callbacks(app):
         shown = {"display": "flex"}
         if mode in {"browse", "upload"}:
             return "", True, hidden, {"display": "grid"}, {"display": "block"}
-        if mode == "url":
-            return (
-                "HTTPS URL to HDF5, LArCV ROOT, manifest, or view…",
-                False,
-                shown,
-                hidden,
-                {"display": "block"},
-            )
         return (
-            "HDF5, LArCV ROOT, manifest, or view path…",
+            "HDF5, LArCV ROOT, manifest, view path, or HTTPS URL…",
             False,
             shown,
             hidden,
@@ -4043,13 +4032,11 @@ def register_callbacks(app):
             }
 
             const file = loadedEvent.file_path;
-            const mode = /^https?:\/\//.test(file) ? 'url' : 'path';
-            const other = mode === 'url' ? 'path' : 'url';
+            const mode = 'path';
             const navigationMode = loadedEvent.navigation_source_mode;
             const sourceMemory = window.spinalTapSourceState;
             if (sourceMemory?.values) {
                 sourceMemory.values[mode] = file;
-                sourceMemory.values[other] = '';
                 if (navigationMode) {
                     sourceMemory.active = navigationMode;
                     setTimeout(function() {

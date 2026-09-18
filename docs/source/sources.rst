@@ -15,9 +15,10 @@ arrows to load entries.
    * - Mode
      - Use it for
      - Behavior
-   * - Path
-     - A path or glob visible to the server.
-     - Opens the host file directly without copying it.
+   * - Path / URL
+     - A server-visible path or glob, or a public HTTP(S) URL.
+     - Opens paths directly. Downloads URLs into the bounded temporary cache
+       before opening them.
    * - Browse
      - A local file selected with the operating-system picker.
      - Transfers the selected file into a private temporary cache. This label
@@ -25,11 +26,8 @@ arrows to load entries.
    * - Upload
      - A workstation file sent to an authenticated hosted deployment.
      - Uses the same private temporary cache as Browse, in retryable chunks.
-   * - URL
-     - A public HTTP or HTTPS source.
-     - Downloads the source into the bounded temporary cache before opening it.
 
-Pressing Enter in a Path or URL field performs the same action as **Open**.
+Pressing Enter in the Path / URL field performs the same action as **Open**.
 Pressing Enter in the event selector performs the same action as **Go**.
 
 Accepted source documents

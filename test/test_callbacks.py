@@ -1382,8 +1382,7 @@ def test_registered_login_entry_and_source_callbacks(callback_app, monkeypatch):
         {"display": "none"},
         {"display": "grid"},
     )
-    assert source("url")[0].startswith("HTTPS URL")
-    assert source("path")[0].startswith("HDF5")
+    assert "HTTPS URL" in source("path")[0]
 
 
 class FakeReader:
