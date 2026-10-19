@@ -237,7 +237,16 @@ def create_app(server=None):
         if check_password(experiment, password):
             session["experiment"] = experiment
             session["authenticated"] = True
-            return redirect("/")
+            # Keep the destination on the application root; only restore the
+            # query and fragment supplied by the browser's login form.
+            search = request.form.get("search", "")
+            fragment = request.form.get("hash", "")
+            destination = "/"
+            if search.startswith("?"):
+                destination += search
+            if fragment.startswith("#"):
+                destination += fragment
+            return redirect(destination)
         return "Invalid credentials", 401
 
     @server.route("/logout")

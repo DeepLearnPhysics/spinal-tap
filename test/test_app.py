@@ -109,6 +109,40 @@ def test_login_logout_and_scene_routes(monkeypatch):
         assert not user_session
 
 
+@pytest.mark.parametrize(
+    "search, fragment, expected",
+    [
+        ("", "", "/"),
+        ("", "#view=encoded-state", "/#view=encoded-state"),
+        ("?mode=display", "#view=a%2Fb+c", "/?mode=display#view=a%2Fb+c"),
+        ("https://example.com", "//example.com", "/"),
+    ],
+)
+def test_login_preserves_shared_destination(monkeypatch, search, fragment, expected):
+    """Login preserves browser state without accepting external destinations."""
+    monkeypatch.setattr(app_module, "REQUIRE_AUTH", True)
+    monkeypatch.setattr(
+        app_module,
+        "EXPERIMENT_PASSWORDS",
+        {"dune": app_module.hash_password("secret")},
+    )
+    client = app_module.create_app(Flask(__name__)).server.test_client()
+    response = client.post(
+        "/login",
+        data={
+            "experiment": "dune",
+            "password": "secret",
+            "search": search,
+            "hash": fragment,
+        },
+    )
+    assert response.status_code == 302
+    assert response.headers["Location"] == expected
+    with client.session_transaction() as user_session:
+        assert user_session["authenticated"] is True
+        assert user_session["experiment"] == "dune"
+
+
 def test_upload_routes_require_authentication(monkeypatch):
     """Every mutation endpoint should reject anonymous authenticated-mode users."""
     monkeypatch.setattr(app_module, "REQUIRE_AUTH", True)

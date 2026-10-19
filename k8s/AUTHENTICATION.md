@@ -67,6 +67,10 @@ The deployment will automatically use the secrets.
 4. On successful login, user can access files in `/data/{experiment}/`
 5. Attempts to access other experiments' data are blocked
 
+When a user opens a shared display link (including a QR-code link) while logged
+out, signing in preserves the URL query and fragment and restores the shared
+file, entry, and view. The selected experiment must have access to that file.
+
 ### Access Control
 
 - **DUNE users**: Can access files in both `/data/2x2/` and `/data/ndlar/`

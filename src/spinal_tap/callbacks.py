@@ -2145,6 +2145,16 @@ def register_callbacks(app):
                 pwdInput.value = data.password;
                 form.appendChild(pwdInput);
 
+                // Fragments are never sent in HTTP requests. Carry the shared
+                // view explicitly so login can restore it after the POST.
+                for (const name of ['search', 'hash']) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = name;
+                    input.value = window.location[name];
+                    form.appendChild(input);
+                }
+
                 document.body.appendChild(form);
                 form.submit();
             }
