@@ -81,7 +81,7 @@
 
         const styles = getComputedStyle(document.documentElement);
         const orange = styles.getPropertyValue("--spine-orange").trim()
-            || "#f47c13";
+            || "#eb7913";
         const line = styles.getPropertyValue("--line-strong").trim()
             || "#c7ccd3";
         const plotTop = 4 * ratio;
@@ -114,7 +114,7 @@
             const span = (state.max - state.min) || 1;
             const left = width * (selection[0] - state.min) / span;
             const right = width * (selection[1] - state.min) / span;
-            context.fillStyle = "rgba(244, 124, 19, 0.15)";
+            context.fillStyle = "rgba(235, 121, 19, 0.15)";
             context.fillRect(left, plotTop, right - left, plotHeight);
             context.strokeStyle = orange;
             context.lineWidth = 2 * ratio;

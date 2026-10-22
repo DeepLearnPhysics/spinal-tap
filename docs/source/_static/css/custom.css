@@ -1,7 +1,7 @@
 /* Keep the documentation visually aligned with the application and SPINE. */
 
 :root {
-  --tap-orange: #f47c13;
+  --tap-orange: #eb7913;
   --tap-orange-dark: #c95f05;
   --tap-orange-soft: #fff3e6;
   --tap-charcoal: #151719;
@@ -27,7 +27,7 @@
 
 .wy-menu-vertical a:hover,
 .wy-menu-vertical a:focus {
-  background: rgba(244, 124, 19, 0.12);
+  background: rgba(235, 121, 19, 0.12);
   color: #ffffff;
 }
 
@@ -70,7 +70,7 @@
 .rst-content .note .admonition-title,
 .rst-content .tip .admonition-title,
 .rst-content .important .admonition-title {
-  background: rgba(244, 124, 19, 0.14);
+  background: rgba(235, 121, 19, 0.14);
   color: var(--tap-charcoal);
 }
 

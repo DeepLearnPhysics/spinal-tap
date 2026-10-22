@@ -1300,7 +1300,7 @@ def register_callbacks(app):
                         hoverinfo: 'skip',
                         showlegend: false,
                         marker: {
-                            color: '#f47c13',
+                            color: '#eb7913',
                             opacity: opacity,
                             size: baseSize + 2,
                             symbol: 'circle-open'

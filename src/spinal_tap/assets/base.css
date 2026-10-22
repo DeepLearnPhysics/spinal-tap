@@ -1,5 +1,5 @@
 :root {
-  --spine-orange: #f47c13;
+  --spine-orange: #eb7913;
   --spine-orange-dark: #c95f05;
   --bg: #f3f4f5;
   --panel: #ffffff;
@@ -18,7 +18,7 @@
   --Dash-Spacing: 4px;
   --Dash-Fill-Inverse-Strong: var(--control);
   --Dash-Fill-Interactive-Strong: var(--spine-orange);
-  --Dash-Fill-Interactive-Weak: rgba(244, 124, 19, 0.14);
+  --Dash-Fill-Interactive-Weak: rgba(235, 121, 19, 0.14);
   --Dash-Fill-Disabled: var(--line);
   --Dash-Stroke-Strong: var(--line);
   --Dash-Text-Strong: var(--ink);
@@ -543,7 +543,7 @@ textarea:focus,
 .Select-control:hover {
   border-color: var(--spine-orange);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(244, 124, 19, 0.16);
+  box-shadow: 0 0 0 3px rgba(235, 121, 19, 0.16);
 }
 
 .control-dropdown {
@@ -604,7 +604,7 @@ textarea:focus,
 
 .dash-dropdown-option:hover,
 .dash-dropdown-option:focus-within {
-  background: rgba(244, 124, 19, 0.12);
+  background: rgba(235, 121, 19, 0.12);
 }
 
 .dash-dropdown-option input {
@@ -622,7 +622,7 @@ html[data-spinal-tap-theme="dark"] body .dash-dropdown-option {
 
 html[data-spinal-tap-theme="dark"] body .dash-dropdown-option:hover,
 html[data-spinal-tap-theme="dark"] body .dash-dropdown-option:focus-within {
-  background: rgba(244, 124, 19, 0.18) !important;
+  background: rgba(235, 121, 19, 0.18) !important;
 }
 
 html[data-spinal-tap-theme="dark"] body .dash-dropdown-value,
@@ -701,11 +701,11 @@ html[data-spinal-tap-theme="dark"] body .dash-dropdown-action-button {
 }
 
 .Select-option.is-focused {
-  background: rgba(244, 124, 19, 0.12);
+  background: rgba(235, 121, 19, 0.12);
 }
 
 .VirtualizedSelectFocusedOption {
-  background: rgba(244, 124, 19, 0.12);
+  background: rgba(235, 121, 19, 0.12);
 }
 
 .Select-option.is-selected {
@@ -731,7 +731,7 @@ html[data-spinal-tap-theme="dark"] body .Select-input > input {
 
 html[data-spinal-tap-theme="dark"] body .Select-option.is-focused,
 html[data-spinal-tap-theme="dark"] body .VirtualizedSelectFocusedOption {
-  background: rgba(244, 124, 19, 0.18) !important;
+  background: rgba(235, 121, 19, 0.18) !important;
 }
 
 html[data-spinal-tap-theme="dark"] body .Select-option.is-selected {
@@ -778,7 +778,7 @@ html[data-spinal-tap-theme="dark"] body .Select-control * {
 }
 
 .segmented-control label:hover:not(:has(input:checked)) {
-  background: rgba(244, 124, 19, 0.12);
+  background: rgba(235, 121, 19, 0.12);
   color: var(--spine-orange-dark);
 }
 
@@ -903,7 +903,7 @@ html[data-spinal-tap-theme="dark"] body .Select-control * {
 .source-file-picker:hover,
 .source-file-picker:focus-within {
   border-color: var(--spine-orange);
-  box-shadow: 0 0 0 3px rgba(244, 124, 19, 0.16);
+  box-shadow: 0 0 0 3px rgba(235, 121, 19, 0.16);
 }
 
 .source-file-name {
@@ -1153,7 +1153,7 @@ html[data-spinal-tap-theme="dark"] body .appearance-range-inputs b {
 .appearance-slider-control .rc-slider-handle:hover,
 .appearance-slider-control .rc-slider-handle:focus {
   border-color: var(--spine-orange);
-  box-shadow: 0 0 0 3px rgba(244, 124, 19, 0.18);
+  box-shadow: 0 0 0 3px rgba(235, 121, 19, 0.18);
 }
 
 .continuous-appearance-controls {
@@ -1260,7 +1260,7 @@ html[data-spinal-tap-theme="dark"] body .appearance-range-inputs b {
 
 .attribute-picker[open] .attribute-picker-trigger {
   border-color: var(--spine-orange);
-  box-shadow: 0 0 0 3px rgba(244, 124, 19, 0.16);
+  box-shadow: 0 0 0 3px rgba(235, 121, 19, 0.16);
 }
 
 .attribute-picker-chevron {
@@ -1432,7 +1432,7 @@ html[data-spinal-tap-theme="dark"] body .appearance-range-inputs b {
 .attribute-picker-search:focus {
   border-color: var(--spine-orange);
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(244, 124, 19, 0.16);
+  box-shadow: 0 0 0 3px rgba(235, 121, 19, 0.16);
 }
 
 .attribute-picker-search::-webkit-search-cancel-button {
@@ -1548,7 +1548,7 @@ html[data-spinal-tap-theme="dark"] body .appearance-range-inputs b {
 }
 
 .attribute-picker-row:hover {
-  background: rgba(244, 124, 19, 0.12);
+  background: rgba(235, 121, 19, 0.12);
 }
 
 .attribute-picker-row input {
@@ -2132,7 +2132,7 @@ body.scene-loading .log-alert-icon::after {
 
 .object-inspector-actions .viewer-action-button.is-active {
   border-color: var(--spine-orange);
-  background: rgba(244, 124, 19, 0.14);
+  background: rgba(235, 121, 19, 0.14);
   color: var(--spine-orange-dark);
 }
 
@@ -2461,7 +2461,7 @@ body.scene-loading .log-alert-icon::after {
 
 .viewer-view-toggles label:has(input:checked) {
   border-color: var(--spine-orange);
-  background: rgba(244, 124, 19, 0.14);
+  background: rgba(235, 121, 19, 0.14);
   color: var(--spine-orange-dark);
 }
 
@@ -2766,7 +2766,7 @@ body.scene-loading .viewer-body::after {
 
 .match-link-toggle:focus-visible {
   outline: 0;
-  box-shadow: 0 0 0 3px rgba(244, 124, 19, 0.18);
+  box-shadow: 0 0 0 3px rgba(235, 121, 19, 0.18);
 }
 
 .meta-chip {
