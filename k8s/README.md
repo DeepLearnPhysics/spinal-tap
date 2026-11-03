@@ -2,6 +2,15 @@
 
 This directory contains Kubernetes manifests for deploying Spinal Tap on SLAC's S3DF Kubernetes infrastructure.
 
+## Argo CD release deployment
+
+A stable-release publishing path and separate Argo Application are prepared for
+review. See [Argo CD deployment and operations](argocd/README.md) for the exact
+configuration, existing LArCV/PVC/Secret preservation, first `v1.2.3` release test,
+private UI access, and pause/rollback commands. Nothing has been installed yet.
+Once adopted, routine updates must use the release channel rather than the manual
+moving-tag `make apply` commands below.
+
 ## Container image selection
 
 Every Spinal Tap release publishes two images to GHCR:

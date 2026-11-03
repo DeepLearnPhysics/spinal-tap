@@ -34,3 +34,7 @@ htmlcov/
 
 # MacOS
 .DS_Store
+
+# Local deployment credentials; templates remain tracked.
+/k8s/secret.yaml
+/k8s/secret.backup.yaml

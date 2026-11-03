@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+  name: neutrino-ml-local
+  namespace: argocd
+stringData:
+  clusterResources: 'false'
+  config: '{}'
+  name: neutrino-ml
+  namespaces: spine-learn,spinal-tap
+  server: https://kubernetes.default.svc
+type: Opaque

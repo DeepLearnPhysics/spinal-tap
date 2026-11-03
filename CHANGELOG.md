@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.2.3] - 2026-11-02
+
+### Added
+- **S3DF release deployment**: Publish tested, digest-pinned lean and LArCV OCI
+  deployment bundles for published stable releases, with a dedicated Argo CD
+  Application following the LArCV release channel. Existing Secrets and the
+  read-only data PVC remain separately managed; pruning is disabled.
+
+### Changed
+- **Docker publication gate**: Publish images and deployment channels after a
+  stable GitHub Release passes tests, documentation checks, version validation
+  and container smoke checks. Tag pushes alone no longer publish Docker images.
+
 ## [1.2.2] - 2026-10-21
 
 ### Fixed

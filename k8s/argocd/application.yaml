@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: spinal-tap
+  namespace: argocd
+spec:
+  destination:
+    namespace: spinal-tap
+    server: https://kubernetes.default.svc
+  ignoreDifferences:
+  - group: apps
+    jsonPointers:
+    - /spec/template/metadata/annotations/kubectl.kubernetes.io~1restartedAt
+    kind: Deployment
+    name: spinal-tap
+  project: spinal-tap
+  source:
+    path: .
+    repoURL: oci://ghcr.io/deeplearnphysics/spinal-tap-deploy
+    targetRevision: release-larcv
+  syncPolicy:
+    automated:
+      allowEmpty: false
+      enabled: true
+      prune: false
+      selfHeal: true
+    syncOptions:
+    - FailOnSharedResource=true
+    - RespectIgnoreDifferences=true

@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: spinal-tap
+  namespace: argocd
+spec:
+  clusterResourceWhitelist: []
+  destinations:
+  - namespace: spinal-tap
+    server: https://kubernetes.default.svc
+  namespaceResourceWhitelist:
+  - group: apps
+    kind: Deployment
+  - group: ''
+    kind: Service
+  - group: networking.k8s.io
+    kind: Ingress
+  sourceRepos:
+  - oci://ghcr.io/deeplearnphysics/spinal-tap-deploy
