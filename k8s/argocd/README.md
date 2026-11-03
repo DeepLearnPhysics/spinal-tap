@@ -1,6 +1,6 @@
 # Spinal Tap releases through Argo CD on S3DF
 
-Status: **prepared for review; not applied**. Reuse the existing self-managed
+Status: **installed and verified on 2026-11-02**. Reuses the existing self-managed
 Argo CD v3.5.6 instance in namespace `argocd` in the `neutrino-ml` vcluster.
 Do not install a second instance. SPINE Learn remains a separate Application
 with its own source, release channel and namespace permissions.
@@ -41,8 +41,9 @@ Read-only inspection confirmed:
 
 - Namespace, Deployment, Service and Ingress: `spinal-tap`.
 - Public address: `https://spinal-tap.slac.stanford.edu`.
-- Runtime flavor: LArCV, currently configured with moving image tag `:larcv`.
-- Running image digest at inspection:
+- Runtime flavor: LArCV. Argo now deploys its tested image by digest, replacing
+  the previous moving `:larcv` reference.
+- Pre-adoption running image digest (retained for recovery):
   `sha256:ae4aa72b8eb77b837d0e7d3398ad9d5446eb9cece6385788a78e9e8e0e42b9bb`.
 - Existing NGINX Ingress class `nginx`; no HTTPRoute migration is proposed.
 - Existing bound `spinal-tap-data` PVC, mounted read-only at `/data`.
@@ -89,35 +90,44 @@ though Argo has no direct Secret permissions in this application namespace.
 Local `k8s/secret.yaml` and `k8s/secret.backup.yaml` are excluded from Git; never
 include either in a release bundle, commit or review output.
 
-## Initial rollout and patch-release test
+## Initial rollout and patch-release verification
 
-Review all four Argo files, shared-installation changes, release workflow, and a
-rendered bundle **before applying configuration or publishing the test release**.
-No deployment change or release has been made by preparing these files.
+The maintainer approved configuration, publication and activation. Stable release
+[v1.2.3](https://github.com/DeepLearnPhysics/spinal-tap/releases/tag/v1.2.3)
+at commit `bcb9474` passed main-branch CI, package/pre-commit checks, and a
+[non-publishing image run](https://github.com/DeepLearnPhysics/spinal-tap/actions/runs/41561701511)
+for both variants before tagging. The
+[release workflow](https://github.com/DeepLearnPhysics/spinal-tap/actions/runs/41562188584)
+then passed tests/100% coverage, documentation, both container smoke checks,
+registry publication, bundle rendering and channel promotion. PyPI and Test PyPI
+publication also succeeded.
 
-First publish the approved patch release and wait for the LArCV job to pass.
-Confirm the new deployment package is anonymously readable, or provision separate
-approved read-only registry access in Argo. Public source does not imply public
-GHCR packages. The existing repo-server already accepts the Flux layer media type.
+Both OCI channels were anonymously readable. Each version/channel pair resolved
+to one validated manifest digest with exactly one Flux layer. Layer hashes
+matched, and bundle files matched their release-run Actions artifacts byte for
+byte. Only Deployment, Service and Ingress were present. The live comparison
+showed only the intended pod-image change; server-side validation passed.
 
-Download `s3df-release-larcv` from that exact Docker Image release run into a fresh
-directory. Inspect the OCI `vVERSION-larcv` and `release-larcv` tags: their manifest
-digests must match, with one expected Flux layer. Compare the extracted files
-byte for byte with the Actions artifact. Render with `kubectl kustomize`, verify
-the image digest and the three expected namespaced kinds, and compare to live
-resources before syncing. Preserve platform-added Ingress fields.
+The scoped RBAC, project and shared discovery configuration were applied first.
+After the release bundle was validated, `application.yaml` was applied and Argo
+performed an **automated** successful sync. The new pod became ready and the old
+pod was removed through the existing RollingUpdate strategy. Both spinal-tap and
+SPINE Learn reported Synced/Healthy afterward.
 
-After review, apply `rbac.yaml`, `shared-cluster.yaml`, and `project.yaml` with
-`--context neutrino-ml`, then `application.yaml`. Do not create the Application
-against a missing OCI channel. The Application will then appear as **spinal-tap**
-in the same Argo UI as SPINE Learn. Automatic sync performs the first rollout.
+Deployed LArCV bundle:
+`sha256:b9ccb4ccfdc0f9bfa039c2dff1839ae867de670e9f127829eff2dff79853d1a1`.
+Deployed image:
+`ghcr.io/deeplearnphysics/spinal-tap@sha256:4f5b9bad859095b9231dc0ce121d1bab39c14c5f859bca13aadc4c634992db2b`.
 
-Verify Synced/Healthy and an automated successful operation, then check the ready
-pod image against the published bundle. Open the login page and verify `Tap 1.2.3`;
-a maintainer should sign in privately and verify file access, a representative
-event, and LArCV input if available. Never put shared passwords in chat or CI.
-Record the previous image and release bundle digest before any later deployment.
-Only after verification should this README say the Application is installed.
+The public page and anonymous Dash layout returned 200 and the layout showed
+**Tap 1.2.3**. Both logo assets matched the release source by SHA-256. Production
+shared passwords were not accessed; a maintainer should verify authenticated
+file access and a representative event privately. Native ROOT/LArCV import and
+application startup were verified on the exact image in CI.
+
+The Application is now visible as **spinal-tap** in the shared Argo UI. Future
+successful stable releases advance `release-larcv` and deploy automatically.
+Review future changes to privileges, storage, flavor or routing before applying.
 
 ## Private access and operational checks
 
@@ -158,6 +168,18 @@ Pause first so self-heal cannot undo the rollback:
 kubectl --context neutrino-ml -n argocd patch application spinal-tap --type merge \
   -p '{"spec":{"syncPolicy":{"automated":{"enabled":false}}}}'
 ```
+
+For this first GitOps release there is no older published deployment bundle.
+If `v1.2.3` needs an emergency rollback before another bundle exists, keep auto
+sync paused and restore the recorded pre-adoption image explicitly:
+
+```bash
+kubectl --context neutrino-ml -n spinal-tap set image deployment/spinal-tap \
+  spinal-tap=ghcr.io/deeplearnphysics/spinal-tap@sha256:ae4aa72b8eb77b837d0e7d3398ad9d5446eb9cece6385788a78e9e8e0e42b9bb
+```
+
+This temporarily leaves Argo OutOfSync; keep it paused until a corrective release
+is validated. For subsequent releases, use the normal source-based rollback:
 
 In the private Argo UI, select an earlier validated **OCI bundle manifest digest**
 (`sha256:...`, not its container image digest), and Sync without pruning. Verify

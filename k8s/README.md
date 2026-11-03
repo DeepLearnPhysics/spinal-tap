@@ -4,12 +4,13 @@ This directory contains Kubernetes manifests for deploying Spinal Tap on SLAC's 
 
 ## Argo CD release deployment
 
-A stable-release publishing path and separate Argo Application are prepared for
-review. See [Argo CD deployment and operations](argocd/README.md) for the exact
-configuration, existing LArCV/PVC/Secret preservation, first `v1.2.3` release test,
-private UI access, and pause/rollback commands. Nothing has been installed yet.
-Once adopted, routine updates must use the release channel rather than the manual
-moving-tag `make apply` commands below.
+Stable releases now deploy through a separate Application in the existing
+self-managed Argo CD instance in `neutrino-ml`. See [Argo CD deployment and operations](argocd/README.md) for the exact
+configuration, LArCV/PVC/Secret preservation, verified `v1.2.3` release rollout,
+private UI access, and pause/rollback commands. Routine updates use the
+`release-larcv` channel. Do not use the manual moving-tag `make apply` commands
+below while automated reconciliation is enabled; they are retained for bootstrap
+and recovery with Argo paused.
 
 ## Container image selection
 
